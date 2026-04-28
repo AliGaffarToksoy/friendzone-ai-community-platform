@@ -1,21 +1,44 @@
 # Python virtual environment
 venv/
+.venv/
+env/
 
 # Python bytecode
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
 
 # Environment files
 .env
+.env.*
+!.env.example
 
 # Logs and temp files
 logs/
 *.log
+*.tmp
 
-# Frontend build outputs (if any)
+# Flask / migration temporary files
+instance/
+.webassets-cache
+
+# Docker / database local files
+*.sqlite
+*.db
+
+# Frontend build outputs
 frontend/dist/
+frontend/build/
+node_modules/
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Operating system files
 .DS_Store
+Thumbs.db
