@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Topluluk Sohbeti - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/chat.css" />
+</head>
+
+<body>
+  <div class="chat-shell">
+    <aside class="chat-sidebar">
+      <div class="brand compact">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Community Chat</span>
+        </div>
+      </div>
+
+      <nav class="chat-nav">
+        <a href="communities.html" class="chat-nav-link">
+          <span>←</span>
+          Topluluklara Dön
+        </a>
+
+        <a href="profile.html" class="chat-nav-link">
+          <span>👤</span>
+          Profilim
+        </a>
+      </nav>
+
+      <div class="sidebar-section">
+        <div class="section-title">Üye Olduğum Topluluklar</div>
+        <div id="chatMyCommunities" class="my-communities">
+          <div class="empty-state-mini">Yükleniyor...</div>
+        </div>
+      </div>
+
+      <button id="logoutBtn" class="logout-button">Çıkış Yap</button>
+    </aside>
+
+    <main class="chat-main">
+      <header class="chat-topbar">
+        <div class="community-identity">
+          <div id="communityAvatar" class="community-large-avatar">FZ</div>
+
+          <div>
+            <div class="chat-breadcrumb">FriendZone / Topluluk</div>
+            <h2 id="communityName">Topluluk yükleniyor...</h2>
+            <p id="communityDescription">Topluluk açıklaması yükleniyor...</p>
+          </div>
+        </div>
+
+        <div class="chat-topbar-actions">
+          <button id="assistantBtn" class="secondary-action">✨ AI Öneri Al</button>
+          <button id="refreshMessagesBtn" class="primary-action">Mesajları Yenile</button>
+        </div>
+      </header>
+
+      <section class="chat-layout">
+        <section class="message-panel">
+          <div class="message-panel-header">
+            <div>
+              <strong>Sohbet Akışı</strong>
+              <span>Gerçek zamanlı topluluk sohbeti</span>
+            </div>
+
+            <div id="connectionStatus" class="connection-pill offline">
+              Bağlanıyor...
+            </div>
+          </div>
+
+          <div id="chatMessages" class="chat-messages">
+            <div class="empty-chat-state">
+              <strong>Mesajlar yükleniyor...</strong>
+              <p>Topluluğun son mesajları getiriliyor.</p>
+            </div>
+          </div>
+
+          <div id="typingIndicator" class="typing-indicator hidden">
+            Birisi yazıyor...
+          </div>
+
+          <form id="messageForm" class="message-composer">
+            <div class="composer-input-wrap">
+              <input
+                type="text"
+                id="messageInput"
+                placeholder="Topluluğa mesaj yaz..."
+                autocomplete="off"
+              />
+            </div>
+
+            <button type="submit" class="send-button">
+              Gönder
+            </button>
+          </form>
+        </section>
+
+        <aside class="chat-right-panel">
+          <section class="assistant-card">
+            <div class="assistant-card-header">
+              <div class="assistant-icon">✨</div>
+              <div>
+                <strong>AI Grup Asistanı</strong>
+                <span>Etkinlik, konu ve buz kırıcı önerileri</span>
+              </div>
+            </div>
+
+            <p>
+              Topluluk kategorisine göre sohbet konusu, mini oyun veya etkinlik fikri üretir.
+            </p>
+
+            <button id="assistantBtnPanel" class="assistant-full-button">
+              Öneri Oluştur
+            </button>
+
+            <div id="assistantSuggestions" class="assistant-suggestions hidden"></div>
+          </section>
+
+          <section class="members-card">
+            <div class="members-header">
+              <strong>Topluluk Bilgisi</strong>
+              <span id="memberCount">0 üye</span>
+            </div>
+
+            <div class="info-list">
+              <div class="info-row">
+                <span>Kategori</span>
+                <strong id="communityCategory">-</strong>
+              </div>
+
+              <div class="info-row">
+                <span>Durum</span>
+                <strong class="success-text">Aktif</strong>
+              </div>
+
+              <div class="info-row">
+                <span>Mesaj Sistemi</span>
+                <strong>Socket.IO</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="rules-card">
+            <strong>Topluluk Kuralları</strong>
+            <ul>
+              <li>Saygılı ve yapıcı iletişim kur.</li>
+              <li>Kişisel verileri paylaşma.</li>
+              <li>Konu dışı spam mesajlardan kaçın.</li>
+            </ul>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/chatHandler.js"></script>
+</body>
+</html>

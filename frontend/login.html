@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Giriş Yap - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+
+<body>
+  <main class="auth-shell">
+    <section class="auth-visual-panel">
+      <div class="auth-brand">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>AI Social Campus</span>
+        </div>
+      </div>
+
+      <div class="auth-hero-copy">
+        <p class="eyebrow">Welcome Back</p>
+        <h2>Kampüsteki sosyal çevreni akıllı eşleşmelerle büyüt</h2>
+        <p>
+          Kişilik tipin, hobilerin ve topluluk etkileşimlerin üzerinden sana daha anlamlı sosyal bağlantılar önerilir.
+        </p>
+      </div>
+
+      <div class="auth-feature-grid">
+        <article class="auth-feature-card">
+          <span>🧠</span>
+          <strong>MBTI Profili</strong>
+          <p>Kişilik testine göre sosyal eşleşme.</p>
+        </article>
+
+        <article class="auth-feature-card">
+          <span>✨</span>
+          <strong>Akıllı Topluluk</strong>
+          <p>Hobilerine göre otomatik yönlendirme.</p>
+        </article>
+
+        <article class="auth-feature-card">
+          <span>💬</span>
+          <strong>Gerçek Zamanlı Chat</strong>
+          <p>Topluluklarda anlık sohbet deneyimi.</p>
+        </article>
+
+        <article class="auth-feature-card">
+          <span>🤖</span>
+          <strong>AI Asistan</strong>
+          <p>Etkinlik ve sohbet önerileri.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="auth-form-panel">
+      <div class="auth-card">
+        <div class="auth-card-header">
+          <p class="eyebrow">Login</p>
+          <h2>Hesabına giriş yap</h2>
+          <p>
+            Devam etmek için üniversite e-posta adresinle giriş yap.
+          </p>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <div class="form-group">
+            <label for="email">Üniversite E-posta Adresi</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="ali@universite.edu.tr"
+              autocomplete="email"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <div class="label-row">
+              <label for="password">Şifre</label>
+              <span>Minimum 6 karakter</span>
+            </div>
+
+            <div class="password-field">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Şifren"
+                autocomplete="current-password"
+                required
+              />
+
+              <button type="button" class="password-toggle" data-target="password">
+                Göster
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" id="loginSubmitBtn" class="primary-action auth-submit">
+            Giriş Yap
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span></span>
+          <p>veya</p>
+          <span></span>
+        </div>
+
+        <p class="auth-switch">
+          Henüz hesabın yok mu?
+          <a href="signup.html">Kayıt ol</a>
+        </p>
+
+        <div class="auth-note">
+          <strong>Not:</strong>
+          FriendZone yalnızca <code>.edu.tr</code> uzantılı üniversite e-postalarını kabul eder.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Python virtual environment
+venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+.env
+
+# Logs and temp files
+logs/
+*.log
+
+# Frontend build outputs (if any)
+frontend/dist/
+
+# Operating system files
+.DS_Store

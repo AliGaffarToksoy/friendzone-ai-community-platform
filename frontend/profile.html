@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Profil - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/profile.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="brand">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>AI Social Campus</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="communities.html" class="nav-link">
+          <span>🏠</span>
+          Topluluklar
+        </a>
+        <a href="profile.html" class="nav-link active">
+          <span>👤</span>
+          Profil
+        </a>
+        <a href="hobbies.html" class="nav-link">
+          <span>✨</span>
+          Hobiler
+        </a>
+        <a href="personality_test.html" class="nav-link">
+          <span>🧠</span>
+          Kişilik Testi
+        </a>
+      </nav>
+
+      <div class="sidebar-section">
+        <div class="section-title">Profil Durumu</div>
+
+        <div class="profile-status-box">
+          <div class="status-dot"></div>
+          <div>
+            <strong>Aktif Kullanıcı</strong>
+            <span>FriendZone profili açık</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="logoutBtn" class="logout-button">Çıkış Yap</button>
+    </aside>
+
+    <main class="app-main">
+      <header class="profile-hero">
+        <div class="profile-hero-left">
+          <div id="profileAvatar" class="profile-avatar-large">FZ</div>
+
+          <div>
+            <p class="eyebrow">Student Social Profile</p>
+            <h2 id="profileNameHero">Profil yükleniyor...</h2>
+            <p id="profileSubtitle" class="profile-subtitle">
+              Kişilik tipi, hobiler ve sosyal eşleşme profilin burada görüntülenir.
+            </p>
+          </div>
+        </div>
+
+        <div class="profile-hero-actions">
+          <a href="personality_test.html" class="secondary-action">Testi Yeniden Al</a>
+          <a href="hobbies.html" class="primary-action">Hobileri Güncelle</a>
+        </div>
+      </header>
+
+      <section class="profile-metrics">
+        <article class="metric-card">
+          <span>Kişilik Tipi</span>
+          <strong id="metricPersonality">-</strong>
+          <p>MBTI tabanlı 12 soruluk test sonucu</p>
+        </article>
+
+        <article class="metric-card">
+          <span>Hobi Sayısı</span>
+          <strong id="metricHobbyCount">0</strong>
+          <p>Topluluk eşleşmesinde kullanılır</p>
+        </article>
+
+        <article class="metric-card">
+          <span>Profil Tamamlanma</span>
+          <strong id="metricCompletion">0%</strong>
+          <p>Profil kalitesini gösterir</p>
+        </article>
+      </section>
+
+      <section class="profile-layout">
+        <section class="profile-main-card">
+          <div class="section-heading profile-heading">
+            <div>
+              <h3>Profil Bilgileri</h3>
+              <p>Kişisel ve akademik bilgilerini güncelle.</p>
+            </div>
+          </div>
+
+          <form id="profileForm" class="profile-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="name">Ad Soyad</label>
+                <input type="text" id="name" name="name" placeholder="Ad Soyad" />
+              </div>
+
+              <div class="form-group">
+                <label for="university">Üniversite</label>
+                <input type="text" id="university" name="university" placeholder="Üniversite" />
+              </div>
+
+              <div class="form-group">
+                <label for="department">Bölüm</label>
+                <input type="text" id="department" name="department" placeholder="Bölüm" />
+              </div>
+
+              <div class="form-group">
+                <label for="year">Sınıf</label>
+                <input type="text" id="year" name="year" placeholder="1, 2, 3, 4 veya Mezun" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="bio">Biyografi</label>
+              <textarea id="bio" name="bio" placeholder="Kendinden, ilgi alanlarından ve FriendZone'da nasıl insanlarla tanışmak istediğinden bahset..."></textarea>
+            </div>
+
+            <button type="submit" class="primary-action full-width-action">Profili Güncelle</button>
+          </form>
+        </section>
+
+        <aside class="profile-side-panel">
+          <section class="profile-card">
+            <div class="card-title-row">
+              <strong>Hobiler</strong>
+              <span id="hobbyCountBadge">0</span>
+            </div>
+
+            <div id="hobbyTags" class="hobby-tags">
+              <span class="empty-soft">Hobiler yükleniyor...</span>
+            </div>
+          </section>
+
+          <section class="profile-card">
+            <div class="card-title-row">
+              <strong>Kişilik Analizi</strong>
+              <span id="personalityBadge">-</span>
+            </div>
+
+            <p id="personalityDescription" class="personality-description">
+              Kişilik tipi yükleniyor...
+            </p>
+          </section>
+        </aside>
+      </section>
+
+      <section class="similar-section">
+        <div class="section-heading">
+          <div>
+            <h3>Benzer Kullanıcılar</h3>
+            <p>Hobi benzerliğine göre önerilen potansiyel bağlantılar.</p>
+          </div>
+
+          <button id="refreshSimilarBtn" class="secondary-action">Yenile</button>
+        </div>
+
+        <div id="similarUsers" class="similar-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/profileHandler.js"></script>
+</body>
+</html>

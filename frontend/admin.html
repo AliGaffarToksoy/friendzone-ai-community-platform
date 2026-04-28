@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Admin Paneli - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div id="adminLoginView" class="admin-login-view">
+    <div class="admin-login-card">
+      <div class="admin-login-brand">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone Admin</h1>
+          <p>Platform yönetim paneli</p>
+        </div>
+      </div>
+
+      <div class="admin-login-copy">
+        <p class="eyebrow">Secure Dashboard</p>
+        <h2>Yönetici Girişi</h2>
+        <p>
+          Kullanıcı, topluluk, mesaj ve test istatistiklerini görüntülemek için admin bilgileriyle giriş yap.
+        </p>
+      </div>
+
+      <form id="adminLoginForm" class="admin-login-form">
+        <div class="form-group">
+          <label for="username">Kullanıcı Adı</label>
+          <input type="text" id="username" placeholder="admin" required />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" placeholder="admin123" required />
+        </div>
+
+        <button type="submit" class="primary-action full-width-action">
+          Admin Paneline Gir
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminDashboardView" class="admin-dashboard hidden">
+    <aside class="app-sidebar">
+      <div class="brand">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Admin Console</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#overview" class="nav-link active">
+          <span>📊</span>
+          Genel Bakış
+        </a>
+        <a href="#users" class="nav-link">
+          <span>👥</span>
+          Kullanıcılar
+        </a>
+        <a href="#communities" class="nav-link">
+          <span>🏛️</span>
+          Topluluklar
+        </a>
+        <a href="#analytics" class="nav-link">
+          <span>🧠</span>
+          Analizler
+        </a>
+      </nav>
+
+      <button id="adminLogoutBtn" class="logout-button">Admin Çıkış</button>
+    </aside>
+
+    <main class="app-main admin-main">
+      <header class="admin-header" id="overview">
+        <div>
+          <p class="eyebrow">Admin Dashboard</p>
+          <h2>FriendZone Platform Yönetimi</h2>
+          <p>
+            Kullanıcı büyümesi, topluluk aktivitesi, mesaj hacmi ve kişilik/hobi istatistiklerini tek panelden takip et.
+          </p>
+        </div>
+
+        <div class="header-actions">
+          <button id="refreshAdminBtn" class="secondary-action">Verileri Yenile</button>
+          <button id="exportBtn" class="primary-action">JSON Export</button>
+        </div>
+      </header>
+
+      <section class="admin-kpi-grid">
+        <article class="admin-kpi-card">
+          <div class="kpi-icon">👥</div>
+          <span>Toplam Kullanıcı</span>
+          <strong id="userCount">0</strong>
+          <p>Kayıtlı aktif/pasif tüm kullanıcılar</p>
+        </article>
+
+        <article class="admin-kpi-card">
+          <div class="kpi-icon">🏛️</div>
+          <span>Topluluk Sayısı</span>
+          <strong id="communityCount">0</strong>
+          <p>Platformdaki toplam topluluk</p>
+        </article>
+
+        <article class="admin-kpi-card">
+          <div class="kpi-icon">💬</div>
+          <span>Mesaj Sayısı</span>
+          <strong id="messageCount">0</strong>
+          <p>Topluluk sohbetlerinde gönderilen mesajlar</p>
+        </article>
+
+        <article class="admin-kpi-card">
+          <div class="kpi-icon">🧠</div>
+          <span>Test Verisi</span>
+          <strong id="personalityCount">0</strong>
+          <p>Kişilik testi tamamlayan kullanıcılar</p>
+        </article>
+      </section>
+
+      <section class="admin-chart-grid">
+        <article class="admin-panel-card">
+          <div class="panel-title-row">
+            <div>
+              <h3>Son 7 Gün Kayıt Grafiği</h3>
+              <p>Gün bazlı kullanıcı kayıt trendi.</p>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <canvas id="registrationChart"></canvas>
+          </div>
+        </article>
+
+        <article class="admin-panel-card" id="analytics">
+          <div class="panel-title-row">
+            <div>
+              <h3>Kişilik Tipleri</h3>
+              <p>MBTI dağılımı.</p>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <canvas id="personalityChart"></canvas>
+          </div>
+        </article>
+      </section>
+
+      <section class="admin-chart-grid">
+        <article class="admin-panel-card">
+          <div class="panel-title-row">
+            <div>
+              <h3>Popüler Hobiler</h3>
+              <p>Kullanıcıların en çok seçtiği hobiler.</p>
+            </div>
+          </div>
+
+          <div id="hobbyStats" class="hobby-stat-list"></div>
+        </article>
+
+        <article class="admin-panel-card">
+          <div class="panel-title-row">
+            <div>
+              <h3>Platform Özeti</h3>
+              <p>Admin operasyon durumu.</p>
+            </div>
+          </div>
+
+          <div class="admin-summary-list">
+            <div class="summary-row">
+              <span>Auth Sistemi</span>
+              <strong>JWT + Bcrypt</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Realtime</span>
+              <strong>Socket.IO</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Database</span>
+              <strong>PostgreSQL</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>AI Fallback</span>
+              <strong>Mock destekli</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="admin-table-section" id="users">
+        <div class="panel-title-row">
+          <div>
+            <h3>Kullanıcı Listesi</h3>
+            <p>Kayıtlı kullanıcılar, akademik bilgileri ve kişilik tipleri.</p>
+          </div>
+
+          <input id="userSearch" class="admin-search" type="text" placeholder="Kullanıcı ara..." />
+        </div>
+
+        <div id="adminUsers" class="admin-table-card"></div>
+      </section>
+
+      <section class="admin-table-section" id="communities">
+        <div class="panel-title-row">
+          <div>
+            <h3>Topluluk Listesi</h3>
+            <p>Topluluk kategorileri, üye sayıları ve durum bilgileri.</p>
+          </div>
+
+          <input id="communitySearch" class="admin-search" type="text" placeholder="Topluluk ara..." />
+        </div>
+
+        <div id="adminCommunities" class="admin-table-card"></div>
+      </section>
+
+      <section class="admin-export-section hidden" id="exportSection">
+        <div class="panel-title-row">
+          <div>
+            <h3>Veritabanı Export</h3>
+            <p>Admin API üzerinden alınan JSON çıktı.</p>
+          </div>
+
+          <button id="hideExportBtn" class="secondary-action">Kapat</button>
+        </div>
+
+        <pre id="exportData"></pre>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/adminHandler.js"></script>
+</body>
+</html>

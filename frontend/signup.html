@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Kayıt Ol - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+
+<body>
+  <main class="auth-shell">
+    <section class="auth-visual-panel">
+      <div class="auth-brand">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>AI Social Campus</span>
+        </div>
+      </div>
+
+      <div class="auth-hero-copy">
+        <p class="eyebrow">Join FriendZone</p>
+        <h2>Üniversite hayatında daha anlamlı bağlantılar kur</h2>
+        <p>
+          Rastgele tanışmalar yerine kişilik tipin, hobilerin ve topluluk ilgi alanların üzerinden sosyal eşleşme deneyimi yaşa.
+        </p>
+      </div>
+
+      <div class="auth-flow-card">
+        <div class="flow-step">
+          <span>1</span>
+          <div>
+            <strong>Kayıt Ol</strong>
+            <p>.edu.tr e-posta adresinle hesabını oluştur.</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <span>2</span>
+          <div>
+            <strong>Kişilik Testini Tamamla</strong>
+            <p>12 soruluk MBTI tabanlı profilini oluştur.</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <span>3</span>
+          <div>
+            <strong>Hobilerini Seç</strong>
+            <p>İlgi alanlarına göre topluluk eşleşmesi al.</p>
+          </div>
+        </div>
+
+        <div class="flow-step">
+          <span>4</span>
+          <div>
+            <strong>Sohbete Başla</strong>
+            <p>Gerçek zamanlı topluluk sohbetlerine katıl.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-form-panel">
+      <div class="auth-card signup-card">
+        <div class="auth-card-header">
+          <p class="eyebrow">Create Account</p>
+          <h2>FriendZone’a katıl</h2>
+          <p>
+            Üniversite hesabınla kayıt ol ve sosyal eşleşme profilini oluşturmaya başla.
+          </p>
+        </div>
+
+        <form id="signupForm" class="auth-form">
+          <div class="form-group">
+            <label for="name">Ad Soyad</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              placeholder="Ali Toksoy"
+              autocomplete="name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Üniversite E-posta Adresi</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="ali@universite.edu.tr"
+              autocomplete="email"
+              required
+            />
+            <small class="input-hint">Sadece .edu.tr uzantılı e-postalar kabul edilir.</small>
+          </div>
+
+          <div class="form-group">
+            <div class="label-row">
+              <label for="password">Şifre</label>
+              <span>Minimum 6 karakter</span>
+            </div>
+
+            <div class="password-field">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Güçlü bir şifre belirle"
+                autocomplete="new-password"
+                required
+              />
+
+              <button type="button" class="password-toggle" data-target="password">
+                Göster
+              </button>
+            </div>
+          </div>
+
+          <div class="form-grid-auth">
+            <div class="form-group">
+              <label for="university">Üniversite</label>
+              <input
+                type="text"
+                id="university"
+                name="university"
+                placeholder="Bülent Ecevit Üniversitesi"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="year">Sınıf</label>
+              <input
+                type="text"
+                id="year"
+                name="year"
+                placeholder="4. Sınıf"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="department">Bölüm</label>
+            <input
+              type="text"
+              id="department"
+              name="department"
+              placeholder="Bilgisayar Mühendisliği"
+            />
+          </div>
+
+          <button type="submit" id="signupSubmitBtn" class="primary-action auth-submit">
+            Hesap Oluştur
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span></span>
+          <p>veya</p>
+          <span></span>
+        </div>
+
+        <p class="auth-switch">
+          Zaten hesabın var mı?
+          <a href="login.html">Giriş yap</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

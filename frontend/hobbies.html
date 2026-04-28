@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Hobi Seçimi - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/hobbies.css" />
+</head>
+
+<body>
+  <div class="hobbies-shell">
+    <aside class="hobbies-sidebar">
+      <div class="brand">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Interest Matching</span>
+        </div>
+      </div>
+        <nav class="sidebar-nav hobbies-page-nav">
+  <a href="profile.html" class="nav-link">
+    <span>←</span>
+    Profile Geri Dön
+  </a>
+
+  <a href="communities.html" class="nav-link">
+    <span>🏠</span>
+    Topluluklara Git
+  </a>
+
+  <a href="personality_test.html" class="nav-link">
+    <span>🧠</span>
+    Kişilik Testi
+  </a>
+</nav>
+
+      <div class="selection-summary-card">
+        <p class="eyebrow">Hobi Profili</p>
+        <h3>İlgi alanlarını seç</h3>
+        <p>
+          Seçtiğin hobiler, otomatik topluluk ataması ve benzer kullanıcı eşleştirmesi için kullanılacak.
+        </p>
+
+        <div class="selection-counter">
+          <div>
+            <strong id="selectedCount">0</strong>
+            <span>/ 8 seçildi</span>
+          </div>
+
+          <p id="selectionStatus">En az 3 hobi seçmelisin.</p>
+        </div>
+
+        <div class="selection-progress-track">
+          <div id="selectionProgress" class="selection-progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="selected-hobbies-card">
+        <div class="card-title-row">
+          <strong>Seçilen Hobiler</strong>
+          <span id="selectedBadge">0</span>
+        </div>
+
+        <div id="selectedHobbiesList" class="selected-hobbies-list">
+          <div class="empty-selected">
+            Henüz seçim yapmadın.
+          </div>
+        </div>
+      </div>
+
+      <div class="hobbies-rules-card">
+        <strong>Seçim Kuralları</strong>
+        <ul>
+          <li>Minimum 3 hobi seçmelisin.</li>
+          <li>Maksimum 8 hobi seçebilirsin.</li>
+          <li>Etiketler topluluk eşleşmesinde kullanılır.</li>
+        </ul>
+      </div>
+
+      <button id="logoutBtn" class="logout-button" type="button">Çıkış Yap</button>
+    </aside>
+
+    <main class="hobbies-main">
+      <header class="hobbies-hero">
+        <div>
+          <p class="eyebrow">AI Community Matching</p>
+          <h2>İlgi alanlarına göre en uygun topluluğa yerleş</h2>
+          <p>
+            Teknoloji, spor, sanat, doğa, eğitim ve sosyal alanlardan sana en yakın aktiviteleri seç.
+            FriendZone bu seçimlere göre seni en uygun topluluğa yönlendirecek.
+          </p>
+        </div>
+
+        <div class="hobbies-hero-card">
+          <span>🎯</span>
+          <strong>Akıllı Atama</strong>
+          <p>
+            Hobi etiketlerin, topluluk tag’leriyle eşleştirilir ve en yüksek skorlu topluluğa atanırsın.
+          </p>
+        </div>
+      </header>
+
+      <section class="hobby-toolbar">
+        <div class="hobby-search-box">
+          <span>🔎</span>
+          <input id="hobbySearch" type="text" placeholder="Hobi ara: Yapay Zeka, Fitness, Müzik..." />
+        </div>
+
+        <button id="clearSelectionBtn" class="secondary-action" type="button">
+          Seçimleri Temizle
+        </button>
+      </section>
+
+      <form id="hobbiesForm" class="hobbies-form">
+        <section id="hobbyContainer" class="hobby-category-grid">
+          <div class="hobby-loading-card">
+            <strong>Hobiler yükleniyor...</strong>
+            <p>Kategoriler backend üzerinden alınıyor.</p>
+          </div>
+        </section>
+
+        <section class="hobbies-submit-bar">
+          <div>
+            <strong>Hobi profilini tamamla</strong>
+            <p id="submitHint">
+              Devam etmek için en az 3 hobi seçmelisin.
+            </p>
+          </div>
+
+          <button id="submitHobbiesBtn" type="submit" class="primary-action" disabled>
+            Topluluk Atamasını Başlat
+          </button>
+        </section>
+      </form>
+    </main>
+  </div>
+
+  <div id="assignmentModal" class="assignment-overlay hidden">
+    <div class="assignment-card">
+      <div class="assignment-icon">✨</div>
+
+      <p class="eyebrow">Topluluk Ataması Tamamlandı</p>
+      <h2 id="assignedCommunityName">Topluluk</h2>
+      <p id="assignmentDescription">
+        Seçtiğin hobiler analiz edildi ve sana en uygun topluluk belirlendi.
+      </p>
+
+      <div class="assignment-actions">
+        <a id="goAssignedCommunityBtn" class="primary-action" href="#">
+          Topluluğa Git
+        </a>
+
+        <a class="secondary-action" href="communities.html">
+          Tüm Toplulukları Gör
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/hobbiesHandler.js"></script>
+</body>
+</html>

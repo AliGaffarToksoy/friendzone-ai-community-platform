@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FriendZone</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="container center">
+    <h1>FriendZone</h1>
+    <p>Üniversite öğrencileri için AI destekli sosyal topluluk platformu.</p>
+    <div class="button-group">
+      <a href="login.html" class="btn">Giriş Yap</a>
+      <a href="signup.html" class="btn btn-secondary">Kayıt Ol</a>
+    </div>
+  </div>
+  <script>
+    // Otomatik yönlendirme: Eğer token varsa communities sayfasına git
+    const token = localStorage.getItem('token');
+    if (token) {
+      window.location.href = 'communities.html';
+    }
+  </script>
+</body>
+</html>

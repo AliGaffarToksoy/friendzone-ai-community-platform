@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Kişilik Testi - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/test.css" />
+</head>
+
+<body>
+  <div class="test-shell">
+    <aside class="test-sidebar">
+      <div class="brand">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Personality Engine</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav test-page-nav">
+        <a href="profile.html" class="nav-link">
+          <span>←</span>
+          Profile Geri Dön
+        </a>
+
+        <a href="communities.html" class="nav-link">
+          <span>🏠</span>
+          Topluluklara Git
+        </a>
+
+        <a href="hobbies.html" class="nav-link">
+          <span>✨</span>
+          Hobiler
+        </a>
+      </nav>
+
+      <div class="test-info-card">
+        <span class="test-step-label">Gelişmiş MBTI Testi</span>
+        <h3>24 Soruluk Sosyal Eşleşme Analizi</h3>
+        <p>
+          Bu test, FriendZone’un seni daha uygun topluluklar ve benzer kullanıcılarla eşleştirmesine yardımcı olur.
+        </p>
+      </div>
+
+      <div class="test-progress-card">
+        <div class="progress-top">
+          <span>İlerleme</span>
+          <strong id="progressText">0/24</strong>
+        </div>
+
+        <div class="progress-track">
+          <div id="progressBar" class="progress-fill"></div>
+        </div>
+
+        <p id="progressHint">
+          Tüm soruları cevapladığında test sonucunu görebileceksin.
+        </p>
+      </div>
+
+      <div class="test-axis-card">
+        <strong>Ölçülen Boyutlar</strong>
+
+        <div class="axis-list">
+          <div class="axis-row">
+            <span>E / I</span>
+            <p>Dışadönüklük - İçedönüklük</p>
+          </div>
+
+          <div class="axis-row">
+            <span>S / N</span>
+            <p>Somutluk - Sezgisellik</p>
+          </div>
+
+          <div class="axis-row">
+            <span>T / F</span>
+            <p>Mantık - Duygu</p>
+          </div>
+
+          <div class="axis-row">
+            <span>J / P</span>
+            <p>Planlılık - Esneklik</p>
+          </div>
+        </div>
+      </div>
+
+      <button id="logoutBtn" class="logout-button" type="button">Çıkış Yap</button>
+    </aside>
+
+    <main class="test-main">
+      <header class="test-hero">
+        <div>
+          <p class="eyebrow">AI Matching Setup</p>
+          <h2>Kişilik profilini daha hassas analiz et</h2>
+          <p>
+            Her ifadeyi 1 ile 5 arasında değerlendir. Yeni 24 soruluk test, sosyal eşleşme ve topluluk önerilerini daha isabetli hale getirir.
+          </p>
+        </div>
+
+        <div class="test-scale-card">
+          <span>1</span>
+          <p>Kesinlikle Katılmıyorum</p>
+          <div></div>
+          <span>5</span>
+          <p>Kesinlikle Katılıyorum</p>
+        </div>
+      </header>
+
+      <form id="personalityForm" class="test-form">
+        <section id="questionList" class="question-list"></section>
+
+        <section class="test-submit-card">
+          <div>
+            <strong>Hazır olduğunda testi tamamla</strong>
+            <p>
+              Sonucun profilinde görünecek ve topluluk önerilerinde kullanılacak.
+            </p>
+          </div>
+
+          <button type="submit" id="submitTestBtn" class="primary-action">
+            Testi Tamamla
+          </button>
+        </section>
+      </form>
+    </main>
+  </div>
+
+  <div id="resultModal" class="test-result-overlay hidden">
+    <div class="test-result-card">
+      <div class="result-glow"></div>
+
+      <p class="eyebrow">Test Sonucun</p>
+      <h2 id="resultType">INTJ</h2>
+      <h3 id="resultTitle">Stratejik Profil</h3>
+      <p id="resultDescription">
+        Sonucun hesaplanıyor...
+      </p>
+
+      <div class="result-actions">
+        <a href="hobbies.html" class="primary-action">Hobileri Seçmeye Devam Et</a>
+        <a href="profile.html" class="secondary-action">Profilime Git</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/testHandler.js"></script>
+</body>
+</html>
