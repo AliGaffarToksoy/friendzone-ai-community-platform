@@ -225,7 +225,7 @@ Password: admin123
 ## Project Structure
 
 ```text
-friendzone/
+friendzone-ai-community-platform/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── nginx.conf
@@ -292,7 +292,7 @@ friendzone/
 Go to the project root directory:
 
 ```bash
-cd /Users/alitoksoy/Downloads/friendzone
+cd /Users/alitoksoy/Downloads/friendzone-ai-community-platform
 ```
 
 Start the project with Docker Compose:
@@ -895,7 +895,7 @@ python3 -m venv venv
 Run the command from the project root:
 
 ```bash
-cd /Users/alitoksoy/Downloads/friendzone
+cd /Users/alitoksoy/Downloads/friendzone-ai-community-platform
 python -m backend.app
 ```
 
