@@ -3,130 +3,160 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Topluluklar - FriendZone</title>
+
+  <link rel="icon" type="image/svg+xml" href="assets/images/friendzone-icon.svg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/community.css" />
 </head>
 
 <body>
-  <div class="app-shell">
-    <aside class="app-sidebar">
-      <div class="brand">
-        <div class="brand-logo">FZ</div>
-        <div>
-          <h1>FriendZone</h1>
+  <div class="community-shell">
+    <aside class="community-sidebar">
+      <a href="index.html" class="community-brand">
+        <div class="brand-mark">FZ</div>
+        <div class="brand-copy">
+          <strong>FriendZone</strong>
           <span>AI Social Campus</span>
         </div>
-      </div>
+      </a>
 
       <nav class="sidebar-nav">
         <a href="communities.html" class="nav-link active">
           <span>🏠</span>
           Topluluklar
         </a>
-        <a href="profile.html" class="nav-link">
-          <span>👤</span>
-          Profil
-        </a>
+
         <a href="hobbies.html" class="nav-link">
           <span>✨</span>
           Hobiler
         </a>
+
         <a href="personality_test.html" class="nav-link">
           <span>🧠</span>
           Kişilik Testi
         </a>
+
+        <a href="profile.html" class="nav-link">
+          <span>👤</span>
+          Profil & Ayarlar
+        </a>
       </nav>
 
-      <div class="sidebar-section">
-        <div class="section-title">Üye Olduğum Topluluklar</div>
-        <div id="myCommunities" class="my-communities">
-          <div class="empty-state-mini">Yükleniyor...</div>
-        </div>
-      </div>
-
-      <button id="logoutBtn" class="logout-button">Çıkış Yap</button>
-    </aside>
-
-    <main class="app-main">
-      <header class="page-header">
-        <div>
-          <p class="eyebrow">Campus Social Matching</p>
-          <h2>Senin için en uygun toplulukları keşfet</h2>
-          <p class="page-subtitle">
-            Kişilik tipin ve ilgi alanlarına göre önerilen topluluklara katıl, sohbet et ve yeni bağlantılar kur.
-          </p>
+      <section class="sidebar-section joined-section">
+        <div class="sidebar-section-header">
+          <span>Katıldığın Topluluklar</span>
         </div>
 
-        <div class="header-actions">
-          <button class="secondary-action" id="refreshBtn" type="button">Yenile</button>
-          <button class="primary-action" id="createCommunityBtn" type="button">+ Topluluk Oluştur</button>
+        <div id="myCommunities" class="my-community-list">
+          <div class="empty-sidebar-state">
+            Toplulukların yükleniyor...
+          </div>
         </div>
-      </header>
-
-      <section class="insight-grid">
-        <article class="insight-card">
-          <span class="insight-label">Önerilen</span>
-          <strong id="recommendedCount">0</strong>
-          <p>kişilik ve hobi eşleşmesine göre</p>
-        </article>
-
-        <article class="insight-card">
-          <span class="insight-label">Toplam Topluluk</span>
-          <strong id="totalCount">0</strong>
-          <p>aktif kampüs topluluğu</p>
-        </article>
-
-        <article class="insight-card">
-          <span class="insight-label">Durum</span>
-          <strong>Online</strong>
-          <p>sohbet sistemine hazır</p>
-        </article>
       </section>
 
-      <section class="toolbar">
-        <div class="search-box">
+      <section class="discovery-card">
+        <p class="eyebrow">Discovery Scope</p>
+        <h3 id="discoveryScopeTitle">Keşif tercihi</h3>
+        <p id="discoveryScopeText">
+          Profil ayarlarından topluluk keşif kapsamını değiştirebilirsin.
+        </p>
+        <a href="profile.html" class="scope-settings-link">Ayarları düzenle</a>
+      </section>
+
+      <button id="logoutBtn" class="logout-button" type="button">Çıkış Yap</button>
+    </aside>
+
+    <main class="community-main">
+      <section class="communities-hero">
+        <div>
+          <p class="eyebrow">Community Discovery</p>
+          <h1>Üniversiteler arası toplulukları keşfet</h1>
+          <p>
+            Kişilik tipine, hobilerine, üniversitene, şehrine ve keşif tercihine göre sana uygun
+            toplulukları bul. Kendi kampüsünden Türkiye geneline uzanan sosyal ağını oluştur.
+          </p>
+
+          <div class="hero-tags">
+            <span>University</span>
+            <span>City</span>
+            <span>Country</span>
+            <span>Online</span>
+          </div>
+        </div>
+
+        <div class="hero-action-card">
+          <strong>Yeni topluluk kur</strong>
+          <p>
+            Üniversite, şehir veya Türkiye geneli kapsamda kendi topluluğunu oluştur.
+          </p>
+          <button id="openCreateCommunityBtn" class="primary-action" type="button">
+            Topluluk Oluştur
+          </button>
+        </div>
+      </section>
+
+      <section class="community-toolbar">
+        <div class="search-wrap">
           <span>🔎</span>
-          <input type="text" id="communitySearch" placeholder="Topluluk ara: Yapay Zeka, Spor, Sanat..." />
+          <input id="communitySearch" type="text" placeholder="Topluluk, şehir, üniversite veya etiket ara...">
         </div>
 
         <select id="categoryFilter">
-          <option value="all">Tüm Kategoriler</option>
-          <option value="Teknoloji">Teknoloji</option>
-          <option value="Spor">Spor</option>
-          <option value="Sanat">Sanat</option>
-          <option value="Doğa">Doğa</option>
-          <option value="Eğitim">Eğitim</option>
-          <option value="Sosyal">Sosyal</option>
+          <option value="">Tüm kategoriler</option>
           <option value="Genel">Genel</option>
+          <option value="Teknoloji">Teknoloji</option>
+          <option value="Kariyer">Kariyer</option>
+          <option value="Eğitim">Eğitim</option>
+          <option value="Sanat">Sanat</option>
+          <option value="Spor">Spor</option>
+          <option value="Doğa">Doğa</option>
+          <option value="Sosyal">Sosyal</option>
+          <option value="Oyun ve Eğlence">Oyun ve Eğlence</option>
+          <option value="Sağlık ve Yaşam">Sağlık ve Yaşam</option>
+        </select>
+
+        <select id="scopeFilter">
+          <option value="">Tüm kapsamlar</option>
+          <option value="university">University</option>
+          <option value="city">City</option>
+          <option value="country">Country</option>
+          <option value="online">Online</option>
         </select>
       </section>
 
       <section class="content-section">
-        <div class="section-heading">
+        <div class="section-title-row">
           <div>
-            <h3>Önerilen Topluluklar</h3>
-            <p>Senin profilinle en yüksek uyuma sahip topluluklar.</p>
+            <p class="eyebrow">Recommended</p>
+            <h2>Önerilen topluluklar</h2>
           </div>
+          <span id="recommendedCount" class="count-pill">0 topluluk</span>
         </div>
 
-        <div id="recommended" class="community-grid"></div>
+        <div id="recommendedCommunities" class="community-grid">
+          <div class="empty-card-state">Öneriler yükleniyor...</div>
+        </div>
       </section>
 
       <section class="content-section">
-        <div class="section-heading">
+        <div class="section-title-row">
           <div>
-            <h3>Tüm Topluluklar</h3>
-            <p>Kampüsteki tüm aktif sosyal topluluklar.</p>
+            <p class="eyebrow">Explore</p>
+            <h2>Tüm görünür topluluklar</h2>
           </div>
+          <span id="allCount" class="count-pill">0 topluluk</span>
         </div>
 
-        <div id="allCommunities" class="community-grid"></div>
+        <div id="allCommunities" class="community-grid">
+          <div class="empty-card-state">Topluluklar yükleniyor...</div>
+        </div>
       </section>
     </main>
   </div>
@@ -135,88 +165,78 @@
     <div class="modal-card">
       <div class="modal-header">
         <div>
-          <p class="eyebrow">New Community</p>
-          <h3>Yeni Topluluk Oluştur</h3>
-          <p>
-            Kampüs içinde öğrencilerin katılabileceği yeni bir sosyal alan oluştur.
-          </p>
+          <p class="eyebrow">Create Community</p>
+          <h2>Yeni topluluk oluştur</h2>
         </div>
-
-        <button id="closeCreateCommunityModal" class="modal-close" type="button">
-          ×
-        </button>
+        <button id="closeCreateCommunityBtn" class="icon-button" type="button">✕</button>
       </div>
 
-      <form id="createCommunityForm" class="modal-form">
+      <form id="createCommunityForm" class="create-community-form">
         <div class="form-group">
-          <label for="communityNameInput">Topluluk Adı</label>
-          <input
-            type="text"
-            id="communityNameInput"
-            placeholder="Örn: Siber Güvenlik Kulübü"
-            required
-          />
+          <label for="communityName">Topluluk Adı</label>
+          <input id="communityName" type="text" placeholder="Örn: İstanbul Üniversiteleri AI Network" required>
         </div>
 
         <div class="form-group">
-          <label for="communityDescriptionInput">Açıklama</label>
-          <textarea
-            id="communityDescriptionInput"
-            placeholder="Bu topluluğun amacı, kimlere hitap ettiği ve ne tür sohbetler yapılacağı..."
-            required
-          ></textarea>
+          <label for="communityDescription">Açıklama</label>
+          <textarea id="communityDescription" rows="4" placeholder="Topluluğun amacını, hedef kitlesini ve etkinlik yapısını anlat..." required></textarea>
         </div>
 
-        <div class="form-grid-modal">
+        <div class="form-grid">
           <div class="form-group">
-            <label for="communityCategoryInput">Kategori</label>
-            <select id="communityCategoryInput" required>
+            <label for="communityCategory">Kategori</label>
+            <select id="communityCategory" required>
               <option value="">Kategori seç</option>
-              <option value="Teknoloji">Teknoloji</option>
-              <option value="Spor">Spor</option>
-              <option value="Sanat">Sanat</option>
-              <option value="Doğa">Doğa</option>
-              <option value="Eğitim">Eğitim</option>
-              <option value="Sosyal">Sosyal</option>
               <option value="Genel">Genel</option>
+              <option value="Teknoloji">Teknoloji</option>
+              <option value="Kariyer">Kariyer</option>
+              <option value="Eğitim">Eğitim</option>
+              <option value="Sanat">Sanat</option>
+              <option value="Spor">Spor</option>
+              <option value="Doğa">Doğa</option>
+              <option value="Sosyal">Sosyal</option>
+              <option value="Oyun ve Eğlence">Oyun ve Eğlence</option>
+              <option value="Sağlık ve Yaşam">Sağlık ve Yaşam</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label for="communityMaxMembersInput">Maksimum Üye</label>
-            <input
-              type="number"
-              id="communityMaxMembersInput"
-              min="10"
-              max="1000"
-              value="100"
-              required
-            />
+            <label for="communityScope">Topluluk Kapsamı</label>
+            <select id="communityScope" required>
+              <option value="university">Sadece bir üniversite</option>
+              <option value="city">Şehir bazlı</option>
+              <option value="country">Türkiye geneli</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="communityUniversity">Üniversite</label>
+            <input id="communityUniversity" type="text" placeholder="Örn: İstanbul Teknik Üniversitesi">
+          </div>
+
+          <div class="form-group">
+            <label for="communityCity">Şehir</label>
+            <input id="communityCity" type="text" placeholder="Örn: İstanbul">
           </div>
         </div>
 
         <div class="form-group">
-          <label for="communityTagsInput">Etiketler</label>
-          <input
-            type="text"
-            id="communityTagsInput"
-            placeholder="Örn: Siber Güvenlik, Linux, CTF, Network"
-            required
-          />
-          <small>
-            Etiketleri virgülle ayır. Bu etiketler öneri ve otomatik eşleştirmede kullanılır.
-          </small>
+          <label for="communityTags">Etiketler</label>
+          <input id="communityTags" type="text" placeholder="yapay zeka, python, networking, startup">
+          <small>Virgülle ayır. En az 2 etiket gir.</small>
         </div>
 
-        <div class="modal-actions">
-          <button type="button" id="cancelCreateCommunity" class="secondary-action">
-            Vazgeç
-          </button>
-
-          <button type="submit" class="primary-action">
-            Topluluğu Oluştur
-          </button>
+        <div class="form-group">
+          <label for="communityMaxMembers">Maksimum Üye</label>
+          <input id="communityMaxMembers" type="number" min="10" max="1000" value="100">
         </div>
+
+        <button id="createCommunitySubmitBtn" type="submit" class="primary-action modal-submit">
+          Topluluğu Oluştur
+        </button>
       </form>
     </div>
   </div>

@@ -5,9 +5,10 @@ FriendZone Flask application factory.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -45,7 +46,6 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Docker veya local fark etmeksizin güvenli frontend origin listesi.
     allowed_origins = [
         "http://localhost:5500",
         "http://127.0.0.1:5500",
@@ -95,8 +95,8 @@ def create_app() -> Flask:
     try:
         from .routes.user_routes import user_bp
         app.register_blueprint(user_bp, url_prefix="/api/user")
-    except Exception:
-        pass
+    except Exception as exc:
+        app.logger.warning(f"User routes could not be registered: {exc}")
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(test_bp, url_prefix="/api/test")
@@ -109,6 +109,13 @@ def create_app() -> Flask:
     register_socketio_events(socketio)
 
     from . import models  # noqa: F401
+
+    @app.route("/uploads/profile_images/<path:filename>", methods=["GET"])
+    def uploaded_profile_image(filename):
+        upload_root = Path(app.root_path) / "uploads" / "profile_images"
+        upload_root.mkdir(parents=True, exist_ok=True)
+
+        return send_from_directory(upload_root, filename)
 
     @app.route("/health", methods=["GET"])
     def health_check():

@@ -1,202 +1,257 @@
 let allCommunitiesCache = [];
-let recommendedCache = [];
+let recommendedCommunitiesCache = [];
 let myCommunitiesCache = [];
+let currentUserProfile = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const token = localStorage.getItem('token');
   const userId = localStorage.getItem('user_id');
 
-  if (!userId) {
-    logout();
+  if (!token || !userId) {
+    window.location.href = 'login.html';
     return;
   }
 
-  bindCommunityPageEvents();
-  await loadCommunityPage(userId);
+  bindCommunityEvents();
+
+  await Promise.all([
+    loadCurrentUserProfile(),
+    loadMyCommunities(),
+    loadRecommendedCommunities(),
+    loadAllCommunities()
+  ]);
+
+  applyFilters();
 });
 
-function bindCommunityPageEvents() {
-  const refreshBtn = document.getElementById('refreshBtn');
+function bindCommunityEvents() {
   const searchInput = document.getElementById('communitySearch');
   const categoryFilter = document.getElementById('categoryFilter');
-  const createCommunityBtn = document.getElementById('createCommunityBtn');
+  const scopeFilter = document.getElementById('scopeFilter');
+  const openModalBtn = document.getElementById('openCreateCommunityBtn');
+  const closeModalBtn = document.getElementById('closeCreateCommunityBtn');
+  const modal = document.getElementById('createCommunityModal');
+  const form = document.getElementById('createCommunityForm');
+  const scopeSelect = document.getElementById('communityScope');
 
-  const closeModalBtn = document.getElementById('closeCreateCommunityModal');
-  const cancelCreateBtn = document.getElementById('cancelCreateCommunity');
-  const createCommunityForm = document.getElementById('createCommunityForm');
-  const createCommunityModal = document.getElementById('createCommunityModal');
+  if (searchInput) searchInput.addEventListener('input', applyFilters);
+  if (categoryFilter) categoryFilter.addEventListener('change', applyFilters);
+  if (scopeFilter) scopeFilter.addEventListener('change', applyFilters);
 
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', async () => {
-      const userId = localStorage.getItem('user_id');
-      await loadCommunityPage(userId);
-      showToast('Topluluklar güncellendi.', 'success');
+  if (openModalBtn) {
+    openModalBtn.addEventListener('click', () => {
+      if (modal) modal.classList.remove('hidden');
+      prefillCreateCommunityForm();
     });
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener('input', applyCommunityFilters);
-  }
-
-  if (categoryFilter) {
-    categoryFilter.addEventListener('change', applyCommunityFilters);
-  }
-
-  if (createCommunityBtn) {
-    createCommunityBtn.addEventListener('click', openCreateCommunityModal);
   }
 
   if (closeModalBtn) {
-    closeModalBtn.addEventListener('click', closeCreateCommunityModal);
-  }
-
-  if (cancelCreateBtn) {
-    cancelCreateBtn.addEventListener('click', closeCreateCommunityModal);
-  }
-
-  if (createCommunityForm) {
-    createCommunityForm.addEventListener('submit', createCommunity);
-  }
-
-  if (createCommunityModal) {
-    createCommunityModal.addEventListener('click', (event) => {
-      if (event.target === createCommunityModal) {
-        closeCreateCommunityModal();
-      }
+    closeModalBtn.addEventListener('click', () => {
+      if (modal) modal.classList.add('hidden');
     });
   }
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeCreateCommunityModal();
-    }
-  });
+  if (modal) {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) modal.classList.add('hidden');
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', createCommunity);
+  }
+
+  if (scopeSelect) {
+    scopeSelect.addEventListener('change', handleScopeFormChange);
+  }
 }
 
-async function loadCommunityPage(userId) {
-  await Promise.all([
-    loadRecommendedCommunities(userId),
-    loadAllCommunities(),
-    loadMyCommunities(userId)
-  ]);
-
-  updateStats();
-  applyCommunityFilters();
-}
-
-async function loadRecommendedCommunities(userId) {
-  const response = await authFetch(`${API_BASE}/api/community/recommendations/${userId}`);
+async function loadCurrentUserProfile() {
+  const userId = localStorage.getItem('user_id');
+  const response = await authFetch(`${API_BASE}/api/user/profile/${userId}`);
 
   if (!response || !response.success) {
-    showToast(response?.message || 'Önerilen topluluklar alınamadı.', 'error');
-    recommendedCache = [];
     return;
   }
 
-  recommendedCache = response.data || [];
-  renderCommunities(recommendedCache, document.getElementById('recommended'), true);
+  currentUserProfile = response.data;
+  renderDiscoveryScope(currentUserProfile);
+}
+
+function renderDiscoveryScope(profile) {
+  const title = document.getElementById('discoveryScopeTitle');
+  const text = document.getElementById('discoveryScopeText');
+
+  const scope = profile?.visibility_scope || 'university';
+
+  const map = {
+    university: {
+      title: 'Kendi Üniversitem',
+      text: `${profile?.university || 'Üniversiten'} içindeki topluluklar, Türkiye geneli ve online topluluklar gösterilir.`
+    },
+    city: {
+      title: 'Şehir Bazlı Keşif',
+      text: `${profile?.city || 'Bulunduğun şehir'} içindeki üniversite toplulukları, Türkiye geneli ve online topluluklar gösterilir.`
+    },
+    country: {
+      title: 'Türkiye Geneli',
+      text: 'Tüm aktif üniversite, şehir, ülke geneli ve online toplulukları keşfedebilirsin.'
+    }
+  };
+
+  const selected = map[scope] || map.university;
+
+  if (title) title.textContent = selected.title;
+  if (text) text.textContent = selected.text;
+}
+
+async function loadMyCommunities() {
+  const userId = localStorage.getItem('user_id');
+  const response = await authFetch(`${API_BASE}/api/community/user/${userId}`);
+
+  if (!response || !response.success) {
+    myCommunitiesCache = [];
+    renderMyCommunities();
+    return;
+  }
+
+  myCommunitiesCache = response.data || [];
+  renderMyCommunities();
+}
+
+async function loadRecommendedCommunities() {
+  const userId = localStorage.getItem('user_id');
+  const response = await authFetch(`${API_BASE}/api/community/recommendations/${userId}`);
+
+  if (!response || !response.success) {
+    recommendedCommunitiesCache = [];
+    renderRecommendedCommunities([]);
+    return;
+  }
+
+  recommendedCommunitiesCache = response.data || [];
+  renderRecommendedCommunities(recommendedCommunitiesCache);
 }
 
 async function loadAllCommunities() {
   const response = await authFetch(`${API_BASE}/api/community`);
 
   if (!response || !response.success) {
-    showToast(response?.message || 'Topluluklar alınamadı.', 'error');
     allCommunitiesCache = [];
+    renderAllCommunities([]);
     return;
   }
 
   allCommunitiesCache = response.data || [];
-  renderCommunities(allCommunitiesCache, document.getElementById('allCommunities'), false);
+  renderAllCommunities(allCommunitiesCache);
 }
 
-async function loadMyCommunities(userId) {
-  const response = await authFetch(`${API_BASE}/api/community/user/${userId}`);
-
-  if (!response || !response.success) {
-    myCommunitiesCache = [];
-    renderMyCommunities([]);
-    return;
-  }
-
-  myCommunitiesCache = response.data || [];
-  renderMyCommunities(myCommunitiesCache);
-}
-
-function updateStats() {
-  const recommendedCount = document.getElementById('recommendedCount');
-  const totalCount = document.getElementById('totalCount');
-
-  if (recommendedCount) {
-    recommendedCount.textContent = recommendedCache.length;
-  }
-
-  if (totalCount) {
-    totalCount.textContent = allCommunitiesCache.length;
-  }
-}
-
-function applyCommunityFilters() {
-  const search = document.getElementById('communitySearch')?.value.toLowerCase().trim() || '';
-  const category = document.getElementById('categoryFilter')?.value || 'all';
+function applyFilters() {
+  const query = normalizeText(document.getElementById('communitySearch')?.value || '');
+  const category = document.getElementById('categoryFilter')?.value || '';
+  const scope = document.getElementById('scopeFilter')?.value || '';
 
   const filteredAll = allCommunitiesCache.filter((community) => {
-    const text = `${community.name || ''} ${community.description || ''} ${community.category || ''}`.toLowerCase();
-    const matchesSearch = text.includes(search);
-    const matchesCategory = category === 'all' || community.category === category;
-    return matchesSearch && matchesCategory;
+    const matchesCategory = !category || community.category === category;
+    const matchesScope = !scope || community.scope === scope;
+
+    const searchable = normalizeText([
+      community.name,
+      community.description,
+      community.category,
+      community.university,
+      community.city,
+      community.scope,
+      ...(community.tags || [])
+    ].join(' '));
+
+    const matchesQuery = !query || searchable.includes(query);
+
+    return matchesCategory && matchesScope && matchesQuery;
   });
 
-  const filteredRecommended = recommendedCache.filter((community) => {
-    const text = `${community.name || ''} ${community.description || ''} ${community.category || ''}`.toLowerCase();
-    const matchesSearch = text.includes(search);
-    const matchesCategory = category === 'all' || community.category === category;
-    return matchesSearch && matchesCategory;
+  const filteredRecommended = recommendedCommunitiesCache.filter((community) => {
+    const matchesCategory = !category || community.category === category;
+    const matchesScope = !scope || community.scope === scope;
+
+    const searchable = normalizeText([
+      community.name,
+      community.description,
+      community.category,
+      community.university,
+      community.city,
+      community.scope,
+      ...(community.tags || [])
+    ].join(' '));
+
+    const matchesQuery = !query || searchable.includes(query);
+
+    return matchesCategory && matchesScope && matchesQuery;
   });
 
-  renderCommunities(filteredRecommended, document.getElementById('recommended'), true);
-  renderCommunities(filteredAll, document.getElementById('allCommunities'), false);
+  renderRecommendedCommunities(filteredRecommended);
+  renderAllCommunities(filteredAll);
 }
 
-function renderMyCommunities(list) {
+function renderMyCommunities() {
   const container = document.getElementById('myCommunities');
 
   if (!container) return;
 
   container.innerHTML = '';
 
-  if (!list.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state-mini';
-    empty.textContent = 'Henüz topluluğa katılmadın.';
-    container.appendChild(empty);
+  if (!myCommunitiesCache.length) {
+    container.innerHTML = `
+      <div class="empty-sidebar-state">
+        Henüz bir topluluğa katılmadın.
+      </div>
+    `;
     return;
   }
 
-  list.forEach((community) => {
+  myCommunitiesCache.forEach((community) => {
     const link = document.createElement('a');
     link.className = 'my-community-link';
     link.href = `community.html?id=${community.id}`;
 
     const avatar = document.createElement('div');
-    avatar.className = 'community-avatar';
+    avatar.className = 'community-mini-avatar';
     avatar.textContent = getInitials(community.name);
 
-    const info = document.createElement('div');
+    const content = document.createElement('div');
 
-    const name = document.createElement('strong');
-    name.textContent = community.name;
+    const title = document.createElement('strong');
+    title.textContent = community.name;
 
     const meta = document.createElement('span');
-    meta.textContent = community.category || 'Topluluk';
+    meta.textContent = getCommunityLocationText(community);
 
-    info.appendChild(name);
-    info.appendChild(meta);
+    content.appendChild(title);
+    content.appendChild(meta);
 
     link.appendChild(avatar);
-    link.appendChild(info);
+    link.appendChild(content);
 
     container.appendChild(link);
   });
+}
+
+function renderRecommendedCommunities(list) {
+  const container = document.getElementById('recommendedCommunities');
+  const count = document.getElementById('recommendedCount');
+
+  if (count) count.textContent = `${list.length} topluluk`;
+
+  renderCommunities(list, container, true);
+}
+
+function renderAllCommunities(list) {
+  const container = document.getElementById('allCommunities');
+  const count = document.getElementById('allCount');
+
+  if (count) count.textContent = `${list.length} topluluk`;
+
+  renderCommunities(list, container, false);
 }
 
 function renderCommunities(list, container, isRecommended = false) {
@@ -205,96 +260,128 @@ function renderCommunities(list, container, isRecommended = false) {
   container.innerHTML = '';
 
   if (!list.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state-card';
-    empty.innerHTML = `
-      <strong>Topluluk bulunamadı</strong>
-      <p>Arama veya filtre kriterlerini değiştirerek tekrar deneyebilirsin.</p>
+    container.innerHTML = `
+      <div class="empty-card-state">
+        Bu filtrelere uygun topluluk bulunamadı.
+      </div>
     `;
-    container.appendChild(empty);
     return;
   }
 
   list.forEach((community) => {
-    const isMember = myCommunitiesCache.some((item) => Number(item.id) === Number(community.id));
-
     const card = document.createElement('article');
-    card.className = 'community-card pro-card';
+    card.className = 'community-card';
 
     const top = document.createElement('div');
     top.className = 'community-card-top';
 
     const avatar = document.createElement('div');
-    avatar.className = 'community-card-avatar';
+    avatar.className = `community-avatar scope-${community.scope || 'country'}`;
     avatar.textContent = getInitials(community.name);
 
-    const titleBlock = document.createElement('div');
-
-    const title = document.createElement('h4');
-    title.textContent = community.name;
-
-    const category = document.createElement('span');
-    category.className = 'community-category';
-    category.textContent = community.category || 'Genel';
-
-    titleBlock.appendChild(title);
-    titleBlock.appendChild(category);
+    const scopeBadge = document.createElement('span');
+    scopeBadge.className = `scope-badge scope-${community.scope || 'country'}`;
+    scopeBadge.textContent = getScopeLabel(community.scope);
 
     top.appendChild(avatar);
-    top.appendChild(titleBlock);
+    top.appendChild(scopeBadge);
+
+    const title = document.createElement('h3');
+    title.textContent = community.name;
 
     const description = document.createElement('p');
     description.className = 'community-description';
-    description.textContent = community.description || 'Bu topluluğun açıklaması henüz eklenmemiş.';
+    description.textContent = community.description || 'Topluluk açıklaması bulunmuyor.';
 
     const meta = document.createElement('div');
-    meta.className = 'community-meta';
+    meta.className = 'community-meta-grid';
 
-    const memberCount = document.createElement('span');
-    memberCount.textContent = `👥 ${community.member_count || 0} üye`;
+    meta.appendChild(createMetaItem('Kategori', community.category || '-'));
+    meta.appendChild(createMetaItem('Kapsam', getScopeLabel(community.scope)));
+    meta.appendChild(createMetaItem('Üniversite', community.university || getScopeFallbackUniversity(community.scope)));
+    meta.appendChild(createMetaItem('Şehir', community.city || getScopeFallbackCity(community.scope)));
+
+    const tags = document.createElement('div');
+    tags.className = 'community-tags';
+
+    (community.tags || []).slice(0, 5).forEach((tag) => {
+      const tagEl = document.createElement('span');
+      tagEl.textContent = tag;
+      tags.appendChild(tagEl);
+    });
+
+    const footer = document.createElement('div');
+    footer.className = 'community-card-footer';
+
+    const stats = document.createElement('div');
+    stats.className = 'community-stats';
+
+    const members = document.createElement('span');
+    members.textContent = `${community.member_count || 0} üye`;
 
     const score = document.createElement('span');
-    const compatibility = Number(community.compatibility_score || 0);
-    const compatibilityPercent = compatibility > 0 ? Math.min(100, compatibility * 25) : 75;
-    score.textContent = isRecommended ? `⚡ Uyum: ${compatibilityPercent}%` : '🌐 Aktif';
+    score.textContent = isRecommended
+      ? `${Math.round(community.compatibility_score || 0)}% uyum`
+      : `${community.max_members || 0} kapasite`;
 
-    meta.appendChild(memberCount);
-    meta.appendChild(score);
+    stats.appendChild(members);
+    stats.appendChild(score);
 
     const actions = document.createElement('div');
     actions.className = 'community-actions';
 
-    const openBtn = document.createElement('a');
-    openBtn.className = 'action-button primary';
-    openBtn.href = `community.html?id=${community.id}`;
-    openBtn.textContent = isMember ? 'Sohbete Gir' : 'Topluluğu İncele';
+    const joined = isUserJoined(community.id);
 
     const joinBtn = document.createElement('button');
+    joinBtn.className = joined ? 'secondary-action joined-button' : 'primary-action';
     joinBtn.type = 'button';
-    joinBtn.className = isMember ? 'action-button joined' : 'action-button secondary';
-    joinBtn.textContent = isMember ? 'Katıldın' : 'Katıl';
-    joinBtn.disabled = isMember;
+    joinBtn.textContent = joined ? 'Katıldın' : 'Katıl';
+    joinBtn.disabled = joined;
+    joinBtn.addEventListener('click', () => joinCommunity(community.id));
 
-    joinBtn.addEventListener('click', async () => {
-      await joinCommunity(community.id);
-    });
+    const openBtn = document.createElement('a');
+    openBtn.className = 'secondary-action';
+    openBtn.href = `community.html?id=${community.id}`;
+    openBtn.textContent = 'Sohbete Gir';
 
-    actions.appendChild(openBtn);
     actions.appendChild(joinBtn);
+    actions.appendChild(openBtn);
+
+    footer.appendChild(stats);
+    footer.appendChild(actions);
 
     card.appendChild(top);
+    card.appendChild(title);
     card.appendChild(description);
     card.appendChild(meta);
-    card.appendChild(actions);
+    card.appendChild(tags);
+    card.appendChild(footer);
 
     container.appendChild(card);
   });
 }
 
-async function joinCommunity(id) {
+function createMetaItem(label, value) {
+  const item = document.createElement('div');
+
+  const span = document.createElement('span');
+  span.textContent = label;
+
+  const strong = document.createElement('strong');
+  strong.textContent = value;
+
+  item.appendChild(span);
+  item.appendChild(strong);
+
+  return item;
+}
+
+async function joinCommunity(communityId) {
   const response = await authFetch(`${API_BASE}/api/community/join`, {
     method: 'POST',
-    body: JSON.stringify({ community_id: id })
+    body: JSON.stringify({
+      community_id: communityId
+    })
   });
 
   if (!response || !response.success) {
@@ -302,121 +389,172 @@ async function joinCommunity(id) {
     return;
   }
 
-  showToast('Topluluğa başarıyla katıldın.', 'success');
+  showToast(response.message || 'Topluluğa katıldın.', 'success');
 
-  const userId = localStorage.getItem('user_id');
-  await loadMyCommunities(userId);
-  applyCommunityFilters();
+  await Promise.all([
+    loadMyCommunities(),
+    loadRecommendedCommunities(),
+    loadAllCommunities()
+  ]);
+
+  applyFilters();
 }
 
-function openCreateCommunityModal() {
-  const modal = document.getElementById('createCommunityModal');
+function prefillCreateCommunityForm() {
+  if (!currentUserProfile) return;
 
-  if (!modal) return;
+  const universityInput = document.getElementById('communityUniversity');
+  const cityInput = document.getElementById('communityCity');
 
-  modal.classList.remove('hidden');
-
-  const nameInput = document.getElementById('communityNameInput');
-
-  if (nameInput) {
-    setTimeout(() => nameInput.focus(), 100);
+  if (universityInput && !universityInput.value) {
+    universityInput.value = currentUserProfile.university || '';
   }
+
+  if (cityInput && !cityInput.value) {
+    cityInput.value = currentUserProfile.city || '';
+  }
+
+  handleScopeFormChange();
 }
 
-function closeCreateCommunityModal() {
-  const modal = document.getElementById('createCommunityModal');
-  const form = document.getElementById('createCommunityForm');
+function handleScopeFormChange() {
+  const scope = document.getElementById('communityScope')?.value || 'university';
+  const universityInput = document.getElementById('communityUniversity');
+  const cityInput = document.getElementById('communityCity');
 
-  if (!modal) return;
+  if (!universityInput || !cityInput) return;
 
-  modal.classList.add('hidden');
+  universityInput.disabled = false;
+  cityInput.disabled = false;
 
-  if (form) {
-    form.reset();
+  if (scope === 'country' || scope === 'online') {
+    universityInput.value = '';
+    cityInput.value = '';
+    universityInput.disabled = true;
+    cityInput.disabled = true;
   }
 
-  const maxMembersInput = document.getElementById('communityMaxMembersInput');
+  if (scope === 'city') {
+    universityInput.value = '';
+    universityInput.disabled = true;
+    cityInput.disabled = false;
+  }
 
-  if (maxMembersInput) {
-    maxMembersInput.value = 100;
+  if (scope === 'university') {
+    universityInput.disabled = false;
+    cityInput.disabled = false;
   }
 }
 
 async function createCommunity(event) {
   event.preventDefault();
 
-  const name = document.getElementById('communityNameInput').value.trim();
-  const description = document.getElementById('communityDescriptionInput').value.trim();
-  const category = document.getElementById('communityCategoryInput').value;
-  const maxMembers = Number(document.getElementById('communityMaxMembersInput').value);
-  const tagsRaw = document.getElementById('communityTagsInput').value.trim();
+  const button = document.getElementById('createCommunitySubmitBtn');
+  const originalText = button.textContent;
 
-  if (!name || !description || !category || !tagsRaw) {
-    showToast('Lütfen tüm alanları doldur.', 'error');
-    return;
-  }
-
-  if (name.length < 3) {
-    showToast('Topluluk adı en az 3 karakter olmalı.', 'error');
-    return;
-  }
-
-  if (description.length < 20) {
-    showToast('Açıklama en az 20 karakter olmalı.', 'error');
-    return;
-  }
-
-  if (maxMembers < 10 || maxMembers > 1000) {
-    showToast('Maksimum üye sayısı 10 ile 1000 arasında olmalı.', 'error');
-    return;
-  }
-
-  const tags = tagsRaw
+  const tags = (document.getElementById('communityTags')?.value || '')
     .split(',')
-    .map((tag) => tag.trim())
+    .map((item) => item.trim())
     .filter(Boolean);
 
-  if (tags.length < 2) {
-    showToast('En az 2 etiket eklemelisin.', 'error');
-    return;
-  }
+  const payload = {
+    name: document.getElementById('communityName')?.value.trim(),
+    description: document.getElementById('communityDescription')?.value.trim(),
+    category: document.getElementById('communityCategory')?.value,
+    scope: document.getElementById('communityScope')?.value,
+    university: document.getElementById('communityUniversity')?.value.trim(),
+    city: document.getElementById('communityCity')?.value.trim(),
+    tags,
+    max_members: Number(document.getElementById('communityMaxMembers')?.value || 100)
+  };
 
-  const submitButton = event.target.querySelector('button[type="submit"]');
-  const originalText = submitButton.textContent;
-
-  submitButton.disabled = true;
-  submitButton.textContent = 'Oluşturuluyor...';
+  button.disabled = true;
+  button.textContent = 'Oluşturuluyor...';
 
   const response = await authFetch(`${API_BASE}/api/community/create`, {
     method: 'POST',
-    body: JSON.stringify({
-      name,
-      description,
-      category,
-      tags,
-      max_members: maxMembers
-    })
+    body: JSON.stringify(payload)
   });
 
-  submitButton.disabled = false;
-  submitButton.textContent = originalText;
+  button.disabled = false;
+  button.textContent = originalText;
 
   if (!response || !response.success) {
     showToast(response?.message || 'Topluluk oluşturulamadı.', 'error');
     return;
   }
 
-  showToast('Topluluk başarıyla oluşturuldu.', 'success');
-  closeCreateCommunityModal();
+  showToast('Topluluk oluşturuldu.', 'success');
 
-  const userId = localStorage.getItem('user_id');
-  await loadCommunityPage(userId);
+  const modal = document.getElementById('createCommunityModal');
+  const form = document.getElementById('createCommunityForm');
 
-  if (response.data?.community_id) {
-    setTimeout(() => {
-      window.location.href = `community.html?id=${response.data.community_id}`;
-    }, 600);
+  if (modal) modal.classList.add('hidden');
+  if (form) form.reset();
+
+  await Promise.all([
+    loadMyCommunities(),
+    loadRecommendedCommunities(),
+    loadAllCommunities()
+  ]);
+
+  applyFilters();
+}
+
+function isUserJoined(communityId) {
+  return myCommunitiesCache.some((community) => String(community.id) === String(communityId));
+}
+
+function getScopeLabel(scope) {
+  const map = {
+    university: 'University',
+    city: 'City',
+    country: 'Country',
+    online: 'Online'
+  };
+
+  return map[scope] || 'Country';
+}
+
+function getScopeFallbackUniversity(scope) {
+  if (scope === 'city') return 'Şehir geneli';
+  if (scope === 'country') return 'Türkiye geneli';
+  if (scope === 'online') return 'Online';
+  return '-';
+}
+
+function getScopeFallbackCity(scope) {
+  if (scope === 'country') return 'Türkiye';
+  if (scope === 'online') return 'Online';
+  return '-';
+}
+
+function getCommunityLocationText(community) {
+  if (community.scope === 'university') {
+    return `${community.university || 'Üniversite'} · ${community.city || '-'}`;
   }
+
+  if (community.scope === 'city') {
+    return `${community.city || 'Şehir'} · şehir geneli`;
+  }
+
+  if (community.scope === 'online') {
+    return 'Online topluluk';
+  }
+
+  return 'Türkiye geneli';
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replaceAll('ı', 'i')
+    .replaceAll('ğ', 'g')
+    .replaceAll('ü', 'u')
+    .replaceAll('ş', 's')
+    .replaceAll('ö', 'o')
+    .replaceAll('ç', 'c')
+    .trim();
 }
 
 function getInitials(name) {
@@ -424,6 +562,7 @@ function getInitials(name) {
 
   return name
     .split(' ')
+    .filter(Boolean)
     .map((part) => part[0])
     .join('')
     .slice(0, 2)

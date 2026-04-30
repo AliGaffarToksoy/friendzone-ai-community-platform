@@ -1,27 +1,320 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FriendZone</title>
+
+  <title>FriendZone - AI-Powered Social Campus</title>
+
+  <link rel="icon" type="image/svg+xml" href="assets/images/friendzone-icon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/landing.css" />
 </head>
+
 <body>
-  <div class="container center">
-    <h1>FriendZone</h1>
-    <p>Üniversite öğrencileri için AI destekli sosyal topluluk platformu.</p>
-    <div class="button-group">
-      <a href="login.html" class="btn">Giriş Yap</a>
-      <a href="signup.html" class="btn btn-secondary">Kayıt Ol</a>
-    </div>
-  </div>
-  <script>
-    // Otomatik yönlendirme: Eğer token varsa communities sayfasına git
-    const token = localStorage.getItem('token');
-    if (token) {
-      window.location.href = 'communities.html';
-    }
-  </script>
+  <main class="landing-page">
+    <nav class="landing-navbar">
+      <a href="index.html" class="landing-brand">
+        <img src="assets/images/friendzone-logo.svg" alt="FriendZone Logo">
+      </a>
+
+      <div class="landing-nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#vision">Vision</a>
+        <a href="#tech">Tech Stack</a>
+      </div>
+
+      <div class="landing-actions">
+        <a href="login.html" class="secondary-action">Login</a>
+        <a href="signup.html" class="primary-action">Get Started</a>
+      </div>
+    </nav>
+
+    <section class="hero-section">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span></span>
+          AI-Powered Inter-University Social Platform
+        </div>
+
+        <h1>
+          Discover communities, events, and meaningful student connections.
+        </h1>
+
+        <p>
+          FriendZone helps university students connect through personality-based matching,
+          hobby-driven recommendations, real-time community chat, and AI-powered group suggestions.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="signup.html" class="primary-action hero-main-button">Create your profile</a>
+          <a href="login.html" class="secondary-action hero-secondary-button">I already have an account</a>
+        </div>
+
+        <div class="hero-stats">
+          <div>
+            <strong>24</strong>
+            <span>MBTI-style questions</span>
+          </div>
+
+          <div>
+            <strong>21+</strong>
+            <span>Seed communities</span>
+          </div>
+
+          <div>
+            <strong>3-layer</strong>
+            <span>Matching engine</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-product-card">
+        <div class="product-window">
+          <div class="window-top">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="product-header">
+            <div class="product-avatar">FZ</div>
+            <div>
+              <strong>AI Community Match</strong>
+              <p>Based on personality, hobbies, and campus preferences</p>
+            </div>
+          </div>
+
+          <div class="match-card active">
+            <div>
+              <strong>Cloud & DevOps Club</strong>
+              <p>Technology · City-wide · 92% match</p>
+            </div>
+            <span>92%</span>
+          </div>
+
+          <div class="match-card">
+            <div>
+              <strong>Startup Network</strong>
+              <p>Career · Inter-university · 84% match</p>
+            </div>
+            <span>84%</span>
+          </div>
+
+          <div class="chat-preview">
+            <div class="chat-message other">
+              What project are you building this week?
+            </div>
+            <div class="chat-message own">
+              I am preparing a Dockerized Flask app 🚀
+            </div>
+          </div>
+
+          <div class="assistant-preview">
+            <span>🤖</span>
+            <p>
+              AI Suggestion: Host a 30-minute mini workshop on CI/CD basics.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section-block">
+      <div class="section-heading">
+        <p class="eyebrow">Core Features</p>
+        <h2>Built as a complete student community product</h2>
+        <p>
+          FriendZone combines social networking, real-time communication, recommendation logic,
+          and AI assistance in one modern platform.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3>Personality-Based Matching</h3>
+          <p>
+            A 24-question MBTI-style test helps the system understand each student’s social profile.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Smart Community Assignment</h3>
+          <p>
+            The matching engine combines hobbies, tags, categories, and personality affinity.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>Real-Time Chat</h3>
+          <p>
+            Community rooms support instant messaging, typing indicators, and emoji reactions.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>GPT / Fallback Assistant</h3>
+          <p>
+            The AI assistant generates topics, event ideas, icebreakers, and group activities.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🏫</div>
+          <h3>Inter-University Vision</h3>
+          <p>
+            Designed to expand beyond one campus into city-wide and country-wide student networks.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Admin Dashboard</h3>
+          <p>
+            Admins can track users, communities, messages, personality stats, and popular hobbies.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="section-block split-section">
+      <div class="section-heading left">
+        <p class="eyebrow">How It Works</p>
+        <h2>From signup to meaningful community interaction</h2>
+        <p>
+          FriendZone turns onboarding into a social discovery flow. Each step improves the quality
+          of community recommendations.
+        </p>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <span>01</span>
+          <div>
+            <h3>Register with a university email</h3>
+            <p>Only `.edu.tr` addresses are accepted to keep the platform student-focused.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <span>02</span>
+          <div>
+            <h3>Complete the personality test</h3>
+            <p>The system calculates an MBTI-like personality type for matching.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <span>03</span>
+          <div>
+            <h3>Select hobbies and interests</h3>
+            <p>Hobbies are mapped to categories and compared against community tags.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <span>04</span>
+          <div>
+            <h3>Join matched communities</h3>
+            <p>Students can chat, react, discover people, and receive AI-powered group suggestions.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="vision" class="vision-section">
+      <div class="vision-card">
+        <p class="eyebrow">FriendZone 2.0 Vision</p>
+        <h2>From campus matching to a nationwide student community network</h2>
+        <p>
+          The next version of FriendZone is designed to support profile settings, persistent profile photos,
+          university and city-based discovery preferences, community events, posters, participation,
+          reviews, and inter-university collaboration.
+        </p>
+
+        <div class="vision-grid">
+          <div>
+            <strong>Profile & Settings</strong>
+            <span>Photo upload, discovery preferences, bio, city, and visibility scope.</span>
+          </div>
+
+          <div>
+            <strong>Events & Posters</strong>
+            <span>Communities can create events with posters, capacity, location, and date.</span>
+          </div>
+
+          <div>
+            <strong>Reviews & Feedback</strong>
+            <span>Students can rate and review events after participating.</span>
+          </div>
+
+          <div>
+            <strong>Cross-University Discovery</strong>
+            <span>Students can discover communities from their university, city, or country.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tech" class="section-block">
+      <div class="section-heading">
+        <p class="eyebrow">Tech Stack</p>
+        <h2>Designed for full-stack, AI, and cloud interview readiness</h2>
+      </div>
+
+      <div class="tech-grid">
+        <div class="tech-column">
+          <h3>Backend</h3>
+          <p>Flask, SQLAlchemy, PostgreSQL, JWT, Bcrypt, Flask-Migrate, Flask-SocketIO, Eventlet</p>
+        </div>
+
+        <div class="tech-column">
+          <h3>Frontend</h3>
+          <p>HTML5, CSS3, Vanilla JavaScript, Socket.IO Client, Chart.js, responsive dark UI</p>
+        </div>
+
+        <div class="tech-column">
+          <h3>AI / Matching</h3>
+          <p>Weighted recommendation engine, MBTI affinity, hobby-category mapping, OpenAI fallback architecture</p>
+        </div>
+
+        <div class="tech-column">
+          <h3>Deployment</h3>
+          <p>Docker, Docker Compose, PostgreSQL container, Nginx frontend container, environment configuration</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div>
+        <p class="eyebrow">Ready to explore?</p>
+        <h2>Start building meaningful student connections.</h2>
+      </div>
+
+      <div class="cta-actions">
+        <a href="signup.html" class="primary-action">Create Account</a>
+        <a href="login.html" class="secondary-action">Login</a>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <div>
+        <img src="assets/images/friendzone-logo.svg" alt="FriendZone Logo">
+        <p>AI-powered student communities, events, and meaningful social discovery.</p>
+      </div>
+
+      <span>Built for portfolio, learning, and technical interview preparation.</span>
+    </footer>
+  </main>
 </body>
 </html>

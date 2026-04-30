@@ -45,6 +45,7 @@ services:
     volumes:
       - .:/app
       - ./logs:/app/logs
+      - ./backend/uploads:/app/backend/uploads
     networks:
       - friendzone_network
 

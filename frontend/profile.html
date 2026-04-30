@@ -6,105 +6,123 @@
 
   <title>Profil - FriendZone</title>
 
+  <link rel="icon" type="image/svg+xml" href="assets/images/friendzone-icon.svg" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/profile.css" />
 </head>
 
 <body>
-  <div class="app-shell">
-    <aside class="app-sidebar">
-      <div class="brand">
-        <div class="brand-logo">FZ</div>
-        <div>
-          <h1>FriendZone</h1>
-          <span>AI Social Campus</span>
-        </div>
-      </div>
+  <div class="profile-shell">
+    <aside class="profile-sidebar">
+      <a href="index.html" class="profile-logo-link">
+        <img src="assets/images/friendzone-logo.svg" alt="FriendZone Logo">
+      </a>
 
       <nav class="sidebar-nav">
         <a href="communities.html" class="nav-link">
           <span>🏠</span>
           Topluluklar
         </a>
-        <a href="profile.html" class="nav-link active">
-          <span>👤</span>
-          Profil
-        </a>
+
         <a href="hobbies.html" class="nav-link">
           <span>✨</span>
           Hobiler
         </a>
+
         <a href="personality_test.html" class="nav-link">
           <span>🧠</span>
           Kişilik Testi
         </a>
+
+        <a href="profile.html" class="nav-link active">
+          <span>👤</span>
+          Profil & Ayarlar
+        </a>
       </nav>
 
-      <div class="sidebar-section">
-        <div class="section-title">Profil Durumu</div>
-
-        <div class="profile-status-box">
-          <div class="status-dot"></div>
-          <div>
-            <strong>Aktif Kullanıcı</strong>
-            <span>FriendZone profili açık</span>
-          </div>
-        </div>
+      <div class="profile-side-card">
+        <p class="eyebrow">Discovery Scope</p>
+        <h3 id="sidebarScopeTitle">Üniversite</h3>
+        <p id="sidebarScopeText">
+          Topluluk keşif tercihini profil ayarlarından değiştirebilirsin.
+        </p>
       </div>
 
-      <button id="logoutBtn" class="logout-button">Çıkış Yap</button>
+      <button id="logoutBtn" class="logout-button" type="button">Çıkış Yap</button>
     </aside>
 
-    <main class="app-main">
-      <header class="profile-hero">
-        <div class="profile-hero-left">
-          <div id="profileAvatar" class="profile-avatar-large">FZ</div>
+    <main class="profile-main">
+      <section class="profile-hero">
+        <div class="profile-identity">
+          <div class="profile-photo-wrap">
+            <img id="profilePhoto" src="" alt="Profil Fotoğrafı" class="profile-photo hidden">
+            <div id="profilePhotoFallback" class="profile-photo-fallback">FZ</div>
+          </div>
 
           <div>
-            <p class="eyebrow">Student Social Profile</p>
-            <h2 id="profileNameHero">Profil yükleniyor...</h2>
-            <p id="profileSubtitle" class="profile-subtitle">
-              Kişilik tipi, hobiler ve sosyal eşleşme profilin burada görüntülenir.
+            <p class="eyebrow">Student Profile</p>
+            <h1 id="profileName">Profil</h1>
+            <p id="profileMeta">
+              Üniversite, bölüm ve şehir bilgilerini güncelleyebilirsin.
             </p>
+
+            <div class="profile-pills">
+              <span id="personalityPill">MBTI: -</span>
+              <span id="communityCountPill">0 topluluk</span>
+              <span id="cityPill">Şehir: -</span>
+            </div>
           </div>
         </div>
 
-        <div class="profile-hero-actions">
-          <a href="personality_test.html" class="secondary-action">Testi Yeniden Al</a>
+        <div class="profile-actions">
+          <a href="personality_test.html" class="secondary-action">Kişilik Testini Yenile</a>
           <a href="hobbies.html" class="primary-action">Hobileri Güncelle</a>
         </div>
-      </header>
-
-      <section class="profile-metrics">
-        <article class="metric-card">
-          <span>Kişilik Tipi</span>
-          <strong id="metricPersonality">-</strong>
-          <p>MBTI tabanlı 24 soruluk test sonucu</p>
-        </article>
-
-        <article class="metric-card">
-          <span>Hobi Sayısı</span>
-          <strong id="metricHobbyCount">0</strong>
-          <p>Topluluk eşleşmesinde kullanılır</p>
-        </article>
-
-        <article class="metric-card">
-          <span>Profil Tamamlanma</span>
-          <strong id="metricCompletion">0%</strong>
-          <p>Profil kalitesini gösterir</p>
-        </article>
       </section>
 
-      <section class="profile-layout">
-        <section class="profile-main-card">
-          <div class="section-heading profile-heading">
+      <section class="profile-grid">
+        <article class="profile-card">
+          <div class="card-header">
             <div>
-              <h3>Profil Bilgileri</h3>
-              <p>Kişisel ve akademik bilgilerini güncelle.</p>
+              <p class="eyebrow">Profile Photo</p>
+              <h2>Profil fotoğrafı</h2>
+            </div>
+          </div>
+
+          <div class="photo-upload-area">
+            <div class="photo-preview-large">
+              <img id="photoPreview" src="" alt="Profil Önizleme" class="hidden">
+              <div id="photoPreviewFallback">FZ</div>
+            </div>
+
+            <div class="photo-upload-content">
+              <p>
+                PNG, JPG, JPEG veya WEBP formatında en fazla 4MB profil fotoğrafı yükleyebilirsin.
+              </p>
+
+              <input id="profileImageInput" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" hidden>
+
+              <div class="photo-buttons">
+                <button id="chooseImageBtn" type="button" class="secondary-action">Görsel Seç</button>
+                <button id="uploadImageBtn" type="button" class="primary-action" disabled>Yükle</button>
+                <button id="deleteImageBtn" type="button" class="danger-action">Kaldır</button>
+              </div>
+
+              <p id="selectedFileName" class="selected-file-name">Henüz dosya seçilmedi.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="profile-card">
+          <div class="card-header">
+            <div>
+              <p class="eyebrow">Profile Settings</p>
+              <h2>Profil bilgileri</h2>
             </div>
           </div>
 
@@ -112,70 +130,98 @@
             <div class="form-grid">
               <div class="form-group">
                 <label for="name">Ad Soyad</label>
-                <input type="text" id="name" name="name" placeholder="Ad Soyad" />
+                <input id="name" type="text" placeholder="Ad Soyad" required>
               </div>
 
+              <div class="form-group">
+                <label for="city">Şehir</label>
+                <input id="city" type="text" placeholder="İstanbul, Zonguldak...">
+              </div>
+            </div>
+
+            <div class="form-grid">
               <div class="form-group">
                 <label for="university">Üniversite</label>
-                <input type="text" id="university" name="university" placeholder="Üniversite" />
-              </div>
-
-              <div class="form-group">
-                <label for="department">Bölüm</label>
-                <input type="text" id="department" name="department" placeholder="Bölüm" />
+                <input id="university" type="text" placeholder="Üniversite">
               </div>
 
               <div class="form-group">
                 <label for="year">Sınıf</label>
-                <input type="text" id="year" name="year" placeholder="1, 2, 3, 4 veya Mezun" />
+                <input id="year" type="text" placeholder="4. Sınıf">
               </div>
             </div>
 
             <div class="form-group">
+              <label for="department">Bölüm</label>
+              <input id="department" type="text" placeholder="Bilgisayar Mühendisliği">
+            </div>
+
+            <div class="form-group">
               <label for="bio">Biyografi</label>
-              <textarea id="bio" name="bio" placeholder="Kendinden, ilgi alanlarından ve FriendZone'da nasıl insanlarla tanışmak istediğinden bahset..."></textarea>
+              <textarea id="bio" rows="5" maxlength="600" placeholder="Kendinden, ilgi alanlarından ve aradığın topluluklardan bahset..."></textarea>
+              <small id="bioCounter">0/600</small>
             </div>
 
-            <button type="submit" class="primary-action full-width-action">Profili Güncelle</button>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="visibilityScope">Topluluk Keşif Tercihi</label>
+                <select id="visibilityScope">
+                  <option value="university">Sadece kendi üniversitem</option>
+                  <option value="city">Şehrimdeki üniversiteler</option>
+                  <option value="country">Türkiye genelindeki topluluklar</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="profileVisibility">Profil Görünürlüğü</label>
+                <select id="profileVisibility">
+                  <option value="true">Benzer kullanıcılarda görünsün</option>
+                  <option value="false">Profilimi gizle</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" id="saveProfileBtn" class="primary-action profile-save-button">
+              Profili Kaydet
+            </button>
           </form>
-        </section>
+        </article>
 
-        <aside class="profile-side-panel">
-          <section class="profile-card">
-            <div class="card-title-row">
-              <strong>Hobiler</strong>
-              <span id="hobbyCountBadge">0</span>
+        <article class="profile-card profile-summary-card">
+          <div class="card-header">
+            <div>
+              <p class="eyebrow">Personality</p>
+              <h2>Kişilik & hobiler</h2>
             </div>
-
-            <div id="hobbyTags" class="hobby-tags">
-              <span class="empty-soft">Hobiler yükleniyor...</span>
-            </div>
-          </section>
-
-          <section class="profile-card">
-            <div class="card-title-row">
-              <strong>Kişilik Analizi</strong>
-              <span id="personalityBadge">-</span>
-            </div>
-
-            <p id="personalityDescription" class="personality-description">
-              Kişilik tipi yükleniyor...
-            </p>
-          </section>
-        </aside>
-      </section>
-
-      <section class="similar-section">
-        <div class="section-heading">
-          <div>
-            <h3>Benzer Kullanıcılar</h3>
-            <p>Hobi benzerliğine göre önerilen potansiyel bağlantılar.</p>
           </div>
 
-          <button id="refreshSimilarBtn" class="secondary-action">Yenile</button>
-        </div>
+          <div class="summary-list">
+            <div>
+              <span>Kişilik Tipi</span>
+              <strong id="summaryPersonality">-</strong>
+            </div>
 
-        <div id="similarUsers" class="similar-grid"></div>
+            <div>
+              <span>Hobiler</span>
+              <div id="summaryHobbies" class="hobby-pill-list"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="profile-card similar-users-card">
+          <div class="card-header">
+            <div>
+              <p class="eyebrow">Similar Students</p>
+              <h2>Benzer kullanıcılar</h2>
+            </div>
+          </div>
+
+          <div id="similarUsers" class="similar-users-list">
+            <div class="empty-card-state">
+              Benzer kullanıcılar yükleniyor...
+            </div>
+          </div>
+        </article>
       </section>
     </main>
   </div>

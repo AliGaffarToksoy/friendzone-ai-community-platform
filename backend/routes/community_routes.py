@@ -5,17 +5,20 @@ Community routes for FriendZone.
 from __future__ import annotations
 
 from flask import Blueprint, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from backend.database.db_connection import db
-from backend.models.community_model import Community, CommunityMember
 from backend.models.chat_room_model import ChatRoom
+from backend.models.community_model import Community, CommunityMember
 from backend.models.user_model import User
 from backend.services.recommendation_service import get_recommended_communities
-from backend.utils.helpers import success_response, error_response
+from backend.utils.helpers import error_response, success_response
 
 
 community_bp = Blueprint("community", __name__)
+
+
+VALID_SCOPES = {"university", "city", "country", "online"}
 
 
 def ensure_chat_room_for_community(community: Community) -> ChatRoom:
@@ -53,34 +56,145 @@ def ensure_chat_room_for_community(community: Community) -> ChatRoom:
     return room
 
 
+def normalize_text(value: str | None) -> str:
+    """
+    Normalize Turkish text for safer filtering.
+    """
+
+    if not value:
+        return ""
+
+    return (
+        str(value)
+        .strip()
+        .lower()
+        .replace("ı", "i")
+        .replace("İ", "i")
+        .replace("ğ", "g")
+        .replace("ü", "u")
+        .replace("ş", "s")
+        .replace("ö", "o")
+        .replace("ç", "c")
+    )
+
+
+def get_member_count(community_id: int) -> int:
+    """
+    Return active member count for a community.
+    """
+
+    return CommunityMember.query.filter_by(
+        community_id=community_id,
+        is_active=True,
+    ).count()
+
+
+def serialize_community(community: Community, score: float | None = None) -> dict:
+    """
+    Serialize a community with member count.
+    """
+
+    return community.to_dict(
+        member_count=get_member_count(community.id),
+        compatibility_score=score,
+    )
+
+
+def is_community_visible_for_user(community: Community, user: User | None) -> bool:
+    """
+    Determine whether a community should be visible to the user.
+
+    Visibility behavior:
+    - Not logged in: show country and online communities.
+    - User scope university: show same university + country + online.
+    - User scope city: show same city + country + online.
+    - User scope country: show all active communities.
+    """
+
+    if not community.is_active:
+        return False
+
+    community_scope = community.scope or "country"
+
+    if community_scope in {"country", "online"}:
+        return True
+
+    if user is None:
+        return False
+
+    user_scope = user.visibility_scope or "university"
+
+    if user_scope == "country":
+        return True
+
+    if user_scope == "city":
+        if community_scope == "city":
+            return normalize_text(community.city) == normalize_text(user.city)
+
+        if community_scope == "university":
+            return (
+                normalize_text(community.city) == normalize_text(user.city)
+                or normalize_text(community.university) == normalize_text(user.university)
+            )
+
+    if user_scope == "university":
+        if community_scope == "university":
+            return normalize_text(community.university) == normalize_text(user.university)
+
+    return False
+
+
+def filter_communities_for_user(communities: list[Community], user: User | None) -> list[Community]:
+    """
+    Filter communities according to user's discovery preference.
+    """
+
+    return [
+        community
+        for community in communities
+        if is_community_visible_for_user(community, user)
+    ]
+
+
+def get_current_user_optional() -> User | None:
+    """
+    Return current user when JWT identity exists, otherwise None.
+    """
+
+    try:
+        identity = get_jwt_identity()
+
+        if not identity:
+            return None
+
+        return User.query.get(int(identity))
+    except Exception:
+        return None
+
+
 @community_bp.route("", methods=["GET"])
 @jwt_required(optional=True)
 def list_communities() -> tuple:
     """
-    Return all active communities.
+    Return all active communities visible according to the user's discovery preference.
     """
 
-    communities = Community.query.filter_by(is_active=True).order_by(Community.created_at.desc()).all()
+    user = get_current_user_optional()
+
+    communities = (
+        Community.query
+        .filter_by(is_active=True)
+        .order_by(Community.created_at.desc())
+        .all()
+    )
+
+    visible_communities = filter_communities_for_user(communities, user)
 
     data = []
 
-    for community in communities:
+    for community in visible_communities:
         ensure_chat_room_for_community(community)
-
-        data.append({
-            "id": community.id,
-            "name": community.name,
-            "description": community.description,
-            "category": community.category,
-            "tags": community.tags or [],
-            "compatibility_score": community.compatibility_score,
-            "member_count": CommunityMember.query.filter_by(
-                community_id=community.id,
-                is_active=True,
-            ).count(),
-            "max_members": community.max_members,
-            "is_active": community.is_active,
-        })
+        data.append(serialize_community(community))
 
     return success_response("Topluluklar getirildi.", data)
 
@@ -102,30 +216,22 @@ def recommendations(user_id: int) -> tuple:
     if not user:
         return error_response("Kullanıcı bulunamadı.", status_code=404)
 
-    communities = get_recommended_communities(user)
+    recommendation_items = get_recommended_communities(user, limit=12)
 
     data = []
 
-    for item in communities:
+    for item in recommendation_items:
         community = item.get("community") if isinstance(item, dict) else item
         score = item.get("score", 0) if isinstance(item, dict) else 0
 
-        ensure_chat_room_for_community(community)
+        if not community:
+            continue
 
-        data.append({
-            "id": community.id,
-            "name": community.name,
-            "description": community.description,
-            "category": community.category,
-            "tags": community.tags or [],
-            "compatibility_score": score,
-            "member_count": CommunityMember.query.filter_by(
-                community_id=community.id,
-                is_active=True,
-            ).count(),
-            "max_members": community.max_members,
-            "is_active": community.is_active,
-        })
+        if not is_community_visible_for_user(community, user):
+            continue
+
+        ensure_chat_room_for_community(community)
+        data.append(serialize_community(community, score=score))
 
     return success_response("Önerilen topluluklar getirildi.", data)
 
@@ -157,18 +263,11 @@ def user_communities(user_id: int) -> tuple:
 
         ensure_chat_room_for_community(community)
 
-        data.append({
-            "id": community.id,
-            "name": community.name,
-            "description": community.description,
-            "category": community.category,
-            "role": membership.role,
-            "joined_at": membership.joined_at.isoformat() if membership.joined_at else None,
-            "member_count": CommunityMember.query.filter_by(
-                community_id=community.id,
-                is_active=True,
-            ).count(),
-        })
+        item = serialize_community(community)
+        item["role"] = membership.role
+        item["joined_at"] = membership.joined_at.isoformat() if membership.joined_at else None
+
+        data.append(item)
 
     return success_response("Kullanıcının toplulukları getirildi.", data)
 
@@ -180,33 +279,31 @@ def get_community(community_id: int) -> tuple:
     Return community details.
     """
 
+    user = User.query.get(int(get_jwt_identity()))
     community = Community.query.get(community_id)
 
     if not community or not community.is_active:
         return error_response("Topluluk bulunamadı.", status_code=404)
 
-    room = ensure_chat_room_for_community(community)
-
-    data = {
-        "id": community.id,
-        "name": community.name,
-        "description": community.description,
-        "category": community.category,
-        "tags": community.tags or [],
-        "compatibility_score": community.compatibility_score,
-        "member_count": CommunityMember.query.filter_by(
+    if not is_community_visible_for_user(community, user):
+        membership = CommunityMember.query.filter_by(
+            user_id=user.id,
             community_id=community.id,
             is_active=True,
-        ).count(),
-        "max_members": community.max_members,
-        "is_active": community.is_active,
-        "chat_room": {
-            "id": room.id,
-            "name": room.name,
-            "description": room.description,
-            "current_members": room.current_members,
-            "max_members": room.max_members,
-        },
+        ).first()
+
+        if not membership:
+            return error_response("Bu topluluğu görüntüleme yetkiniz yok.", status_code=403)
+
+    room = ensure_chat_room_for_community(community)
+
+    data = serialize_community(community)
+    data["chat_room"] = {
+        "id": room.id,
+        "name": room.name,
+        "description": room.description,
+        "current_members": room.current_members,
+        "max_members": room.max_members,
     }
 
     return success_response("Topluluk detayı getirildi.", data)
@@ -220,6 +317,11 @@ def join_community() -> tuple:
     """
 
     user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+
+    if not user:
+        return error_response("Kullanıcı bulunamadı.", status_code=404)
+
     data = request.get_json() or {}
     community_id = data.get("community_id")
 
@@ -231,10 +333,13 @@ def join_community() -> tuple:
     if not community or not community.is_active:
         return error_response("Topluluk bulunamadı.", status_code=404)
 
-    active_member_count = CommunityMember.query.filter_by(
-        community_id=community.id,
-        is_active=True,
-    ).count()
+    if not is_community_visible_for_user(community, user):
+        return error_response(
+            "Bu topluluk mevcut keşif tercihinize uygun değil. Profil ayarlarından keşif kapsamınızı genişletebilirsiniz.",
+            status_code=403,
+        )
+
+    active_member_count = get_member_count(community.id)
 
     if community.max_members and active_member_count >= community.max_members:
         return error_response("Topluluk maksimum üye sayısına ulaşmış.", status_code=409)
@@ -263,10 +368,7 @@ def join_community() -> tuple:
         db.session.add(membership)
 
     room = ensure_chat_room_for_community(community)
-    room.current_members = CommunityMember.query.filter_by(
-        community_id=community.id,
-        is_active=True,
-    ).count()
+    room.current_members = get_member_count(community.id)
 
     db.session.commit()
 
@@ -285,11 +387,19 @@ def create_community() -> tuple:
     """
 
     user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+
+    if not user:
+        return error_response("Kullanıcı bulunamadı.", status_code=404)
+
     data = request.get_json() or {}
 
     name = str(data.get("name", "")).strip()
     description = str(data.get("description", "")).strip()
     category = str(data.get("category", "")).strip()
+    university = str(data.get("university", user.university or "")).strip()
+    city = str(data.get("city", user.city or "")).strip()
+    scope = str(data.get("scope", "university")).strip()
     tags = data.get("tags", [])
     max_members = data.get("max_members", 100)
 
@@ -301,6 +411,15 @@ def create_community() -> tuple:
 
     if not category:
         return error_response("Kategori zorunludur.")
+
+    if scope not in VALID_SCOPES:
+        return error_response("Geçersiz topluluk kapsamı.")
+
+    if scope == "university" and not university:
+        return error_response("Üniversite kapsamındaki topluluklar için üniversite bilgisi zorunludur.")
+
+    if scope == "city" and not city:
+        return error_response("Şehir kapsamındaki topluluklar için şehir bilgisi zorunludur.")
 
     if not isinstance(tags, list) or len(tags) < 2:
         return error_response("En az 2 etiket girmelisiniz.")
@@ -329,6 +448,9 @@ def create_community() -> tuple:
         name=name,
         description=description,
         category=category,
+        university=university or None,
+        city=city or None,
+        scope=scope,
         tags=cleaned_tags,
         max_members=max_members,
         is_active=True,
