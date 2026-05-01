@@ -5,6 +5,13 @@ let currentUserId = null;
 let typingTimer = null;
 let isTyping = false;
 let communityEventsCache = [];
+let communityMembersCache = [];
+
+let communityMembersPermission = {
+  can_manage_members: false,
+  can_moderate: false,
+  viewer_role: 'member'
+};
 
 const AVAILABLE_REACTIONS = ['👍', '❤️', '😂', '🔥', '👏'];
 
@@ -30,7 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadCommunityDetails(),
     loadMyCommunitiesForChat(),
     loadMessages(),
-    loadCommunityEvents()
+    loadCommunityEvents(),
+    loadCommunityMembers()
   ]);
 
   initSocket();
@@ -51,6 +59,8 @@ function bindChatEvents() {
   const closeEventDetailBtn = document.getElementById('closeEventDetailBtn');
   const eventDetailModal = document.getElementById('eventDetailModal');
   const eventReviewForm = document.getElementById('eventReviewForm');
+
+  const refreshMembersBtn = document.getElementById('refreshMembersBtn');
 
   if (messageForm) {
     messageForm.addEventListener('submit', sendMessage);
@@ -78,13 +88,13 @@ function bindChatEvents() {
   if (openCreateEventBtn) {
     openCreateEventBtn.addEventListener('click', () => {
       prefillCreateEventForm();
-      createEventModal?.classList.remove('hidden');
+      if (createEventModal) createEventModal.classList.remove('hidden');
     });
   }
 
   if (closeCreateEventBtn) {
     closeCreateEventBtn.addEventListener('click', () => {
-      createEventModal?.classList.add('hidden');
+      if (createEventModal) createEventModal.classList.add('hidden');
     });
   }
 
@@ -102,7 +112,7 @@ function bindChatEvents() {
 
   if (closeEventDetailBtn) {
     closeEventDetailBtn.addEventListener('click', () => {
-      eventDetailModal?.classList.add('hidden');
+      if (eventDetailModal) eventDetailModal.classList.add('hidden');
     });
   }
 
@@ -116,6 +126,13 @@ function bindChatEvents() {
 
   if (eventReviewForm) {
     eventReviewForm.addEventListener('submit', submitEventReview);
+  }
+
+  if (refreshMembersBtn) {
+    refreshMembersBtn.addEventListener('click', async () => {
+      await loadCommunityMembers();
+      showToast('Üye listesi yenilendi.', 'success');
+    });
   }
 }
 
@@ -146,13 +163,38 @@ async function loadCommunityDetails() {
   if (avatar) avatar.textContent = getInitials(activeCommunity.name);
   if (category) category.textContent = activeCommunity.category || 'Genel';
   if (memberCount) memberCount.textContent = `${activeCommunity.member_count || 0} üye`;
+
   if (scope) scope.textContent = getScopeLabel(activeCommunity.scope);
   if (city) city.textContent = activeCommunity.city || getScopeFallbackCity(activeCommunity.scope);
 
-  if (scopePill) scopePill.textContent = `Kapsam: ${getScopeLabel(activeCommunity.scope)}`;
-  if (cityPill) cityPill.textContent = `Şehir: ${activeCommunity.city || getScopeFallbackCity(activeCommunity.scope)}`;
+  if (scopePill) {
+    scopePill.textContent = `Kapsam: ${getScopeLabel(activeCommunity.scope)}`;
+  }
+
+  if (cityPill) {
+    cityPill.textContent = `Şehir: ${activeCommunity.city || getScopeFallbackCity(activeCommunity.scope)}`;
+  }
+
   if (universityPill) {
     universityPill.textContent = `Üniversite: ${activeCommunity.university || getScopeFallbackUniversity(activeCommunity.scope)}`;
+  }
+
+  updateCreateEventButtonVisibility();
+}
+
+function updateCreateEventButtonVisibility() {
+  const button = document.getElementById('openCreateEventBtn');
+
+  if (!button || !activeCommunity) return;
+
+  if (activeCommunity.can_manage_events) {
+    button.classList.remove('hidden');
+    button.disabled = false;
+    button.title = 'Etkinlik oluştur';
+  } else {
+    button.classList.remove('hidden');
+    button.disabled = false;
+    button.title = 'Etkinlik oluşturmak için admin veya moderatör olmalısınız.';
   }
 }
 
@@ -197,6 +239,7 @@ async function loadMyCommunitiesForChat() {
 
     link.appendChild(avatar);
     link.appendChild(info);
+
     container.appendChild(link);
   });
 }
@@ -260,6 +303,7 @@ async function loadCommunityEvents() {
         ${response?.message || 'Etkinlikler yüklenemedi.'}
       </div>
     `;
+
     if (count) count.textContent = '0 etkinlik';
     return;
   }
@@ -346,7 +390,7 @@ function renderCommunityEvents() {
 
     const goingBtn = document.createElement('button');
     goingBtn.type = 'button';
-    goingBtn.textContent = 'Katılıyorum';
+    goingBtn.textContent = event.user_status === 'going' ? 'Katıldın' : 'Katılıyorum';
     goingBtn.addEventListener('click', () => updateCommunityEventStatus(event.id, 'going'));
 
     const detailBtn = document.createElement('button');
@@ -365,6 +409,147 @@ function renderCommunityEvents() {
 
     card.appendChild(poster);
     card.appendChild(content);
+
+    container.appendChild(card);
+  });
+}
+
+async function loadCommunityMembers() {
+  const container = document.getElementById('communityMembersList');
+  const count = document.getElementById('communityMembersCount');
+
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="empty-state-mini">
+      Üyeler yükleniyor...
+    </div>
+  `;
+
+  const response = await authFetch(`${API_BASE}/api/community/${activeCommunityId}/members`);
+
+  if (!response || !response.success) {
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        ${response?.message || 'Üyeler yüklenemedi.'}
+      </div>
+    `;
+
+    if (count) count.textContent = '0 üye';
+    return;
+  }
+
+  communityMembersCache = response.data.members || [];
+
+  communityMembersPermission = {
+    can_manage_members: Boolean(response.data.can_manage_members),
+    can_moderate: Boolean(response.data.can_moderate),
+    viewer_role: response.data.viewer_role || 'member'
+  };
+
+  if (count) count.textContent = `${communityMembersCache.length} üye`;
+
+  renderCommunityMembers();
+}
+
+function renderCommunityMembers() {
+  const container = document.getElementById('communityMembersList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!communityMembersCache.length) {
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        Bu toplulukta aktif üye bulunamadı.
+      </div>
+    `;
+    return;
+  }
+
+  communityMembersCache.forEach((member) => {
+    const card = document.createElement('article');
+    card.className = 'community-member-card';
+
+    const top = document.createElement('div');
+    top.className = 'community-member-top';
+
+    const avatar = document.createElement('div');
+    avatar.className = `member-avatar role-${member.role || 'member'}`;
+
+    if (member.profile_image) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}/uploads/profile_images/${member.profile_image}`;
+      img.alt = member.name;
+      avatar.appendChild(img);
+    } else {
+      avatar.textContent = getInitials(member.name);
+    }
+
+    const identity = document.createElement('div');
+    identity.className = 'member-identity';
+
+    const name = document.createElement('strong');
+    name.textContent = member.name || 'FriendZone Kullanıcısı';
+
+    const meta = document.createElement('span');
+    meta.textContent = buildMemberMeta(member);
+
+    identity.appendChild(name);
+    identity.appendChild(meta);
+
+    const roleBadge = document.createElement('span');
+    roleBadge.className = `member-role-badge role-${member.role || 'member'}`;
+    roleBadge.textContent = getMemberRoleLabel(member.role);
+
+    top.appendChild(avatar);
+    top.appendChild(identity);
+    top.appendChild(roleBadge);
+
+    const details = document.createElement('div');
+    details.className = 'member-detail-grid';
+
+    details.appendChild(createMemberDetail('Üniversite', member.university || '-'));
+    details.appendChild(createMemberDetail('Bölüm', member.department || '-'));
+    details.appendChild(createMemberDetail('Şehir', member.city || '-'));
+    details.appendChild(createMemberDetail('Kişilik', member.personality_type || '-'));
+
+    card.appendChild(top);
+    card.appendChild(details);
+
+    if (communityMembersPermission.can_manage_members) {
+      const actions = document.createElement('div');
+      actions.className = 'member-management-actions';
+
+      const roleSelect = document.createElement('select');
+      roleSelect.className = 'member-role-select';
+      roleSelect.value = member.role || 'member';
+
+      roleSelect.innerHTML = `
+        <option value="admin">Admin</option>
+        <option value="moderator">Moderator</option>
+        <option value="member">Member</option>
+      `;
+
+      roleSelect.addEventListener('change', () => {
+        updateMemberRole(member.user_id, roleSelect.value);
+      });
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'member-remove-button';
+      removeBtn.textContent = 'Çıkar';
+
+      removeBtn.addEventListener('click', () => {
+        removeCommunityMember(member.user_id, member.name);
+      });
+
+      actions.appendChild(roleSelect);
+      actions.appendChild(removeBtn);
+
+      card.appendChild(actions);
+    }
 
     container.appendChild(card);
   });
@@ -477,6 +662,7 @@ function handleTyping() {
 
   if (!isTyping) {
     isTyping = true;
+
     socket.emit('typing', {
       room_id: activeCommunityId,
       user_id: currentUserId
@@ -497,6 +683,7 @@ function handleTyping() {
 
 function appendMessage(message) {
   const container = document.getElementById('chatMessages');
+
   if (!container) return;
 
   const messageRow = document.createElement('div');
@@ -627,6 +814,7 @@ async function generateAssistantSuggestions() {
   if (!suggestionsBox) return;
 
   suggestionsBox.classList.remove('hidden');
+
   suggestionsBox.innerHTML = `
     <div class="assistant-loading">
       AI öneriler oluşturuluyor...
@@ -664,6 +852,9 @@ async function generateAssistantSuggestions() {
 
     item.addEventListener('click', () => {
       const input = document.getElementById('messageInput');
+
+      if (!input) return;
+
       input.value = suggestion;
       input.focus();
     });
@@ -691,9 +882,10 @@ async function createCommunityEvent(event) {
   event.preventDefault();
 
   const button = document.getElementById('createEventSubmitBtn');
-  const originalText = button.textContent;
+  const originalText = button ? button.textContent : 'Etkinliği Oluştur';
 
   const formData = new FormData();
+
   formData.append('community_id', activeCommunityId);
   formData.append('title', document.getElementById('eventTitle')?.value.trim() || '');
   formData.append('description', document.getElementById('eventDescription')?.value.trim() || '');
@@ -710,8 +902,10 @@ async function createCommunityEvent(event) {
     formData.append('poster', posterFile);
   }
 
-  button.disabled = true;
-  button.textContent = 'Oluşturuluyor...';
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Oluşturuluyor...';
+  }
 
   try {
     const token = localStorage.getItem('token');
@@ -743,8 +937,10 @@ async function createCommunityEvent(event) {
   } catch (error) {
     showToast(`Bağlantı hatası: ${error.message}`, 'error');
   } finally {
-    button.disabled = false;
-    button.textContent = originalText;
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
   }
 }
 
@@ -909,10 +1105,59 @@ async function submitEventReview(event) {
   showToast('Değerlendirme kaydedildi.', 'success');
 
   const form = document.getElementById('eventReviewForm');
+
   if (form) form.reset();
 
   await loadEventReviews(eventId);
   await loadCommunityEvents();
+}
+
+async function updateMemberRole(userId, role) {
+  const confirmed = confirm(`Bu kullanıcının rolünü "${getMemberRoleLabel(role)}" yapmak istediğine emin misin?`);
+
+  if (!confirmed) {
+    await loadCommunityMembers();
+    return;
+  }
+
+  const response = await authFetch(`${API_BASE}/api/community/${activeCommunityId}/members/${userId}/role`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      role
+    })
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Rol güncellenemedi.', 'error');
+    await loadCommunityMembers();
+    return;
+  }
+
+  showToast('Üye rolü güncellendi.', 'success');
+
+  await loadCommunityMembers();
+  await loadCommunityDetails();
+}
+
+async function removeCommunityMember(userId, name) {
+  const confirmed = confirm(`${name || 'Bu kullanıcı'} topluluktan çıkarılsın mı?`);
+
+  if (!confirmed) return;
+
+  const response = await authFetch(`${API_BASE}/api/community/${activeCommunityId}/members/${userId}`, {
+    method: 'DELETE'
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Üye çıkarılamadı.', 'error');
+    return;
+  }
+
+  showToast('Üye topluluktan çıkarıldı.', 'success');
+
+  await loadCommunityMembers();
+  await loadCommunityDetails();
+  await loadMyCommunitiesForChat();
 }
 
 function createMetaItem(label, value) {
@@ -930,13 +1175,49 @@ function createMetaItem(label, value) {
   return item;
 }
 
+function createMemberDetail(label, value) {
+  const item = document.createElement('div');
+
+  const span = document.createElement('span');
+  span.textContent = label;
+
+  const strong = document.createElement('strong');
+  strong.textContent = value;
+
+  item.appendChild(span);
+  item.appendChild(strong);
+
+  return item;
+}
+
+function buildMemberMeta(member) {
+  const parts = [];
+
+  if (member.year) parts.push(member.year);
+  if (member.message_count !== undefined) parts.push(`${member.message_count} mesaj`);
+
+  return parts.length ? parts.join(' · ') : 'Topluluk üyesi';
+}
+
+function getMemberRoleLabel(role) {
+  const map = {
+    admin: 'Admin',
+    moderator: 'Moderator',
+    member: 'Member'
+  };
+
+  return map[role] || 'Member';
+}
+
 function showTypingIndicator() {
   const indicator = document.getElementById('typingIndicator');
+
   if (!indicator) return;
 
   indicator.classList.remove('hidden');
 
   clearTimeout(indicator._timer);
+
   indicator._timer = setTimeout(() => {
     hideTypingIndicator();
   }, 1600);
@@ -944,6 +1225,7 @@ function showTypingIndicator() {
 
 function hideTypingIndicator() {
   const indicator = document.getElementById('typingIndicator');
+
   if (!indicator) return;
 
   indicator.classList.add('hidden');
@@ -951,11 +1233,13 @@ function hideTypingIndicator() {
 
 function removeEmptyChatState() {
   const empty = document.querySelector('.empty-chat-state');
+
   if (empty) empty.remove();
 }
 
 function scrollChatToBottom() {
   const container = document.getElementById('chatMessages');
+
   if (!container) return;
 
   container.scrollTop = container.scrollHeight;
@@ -1023,11 +1307,13 @@ function getEventTypeIcon(type) {
 
 function getEventTypeFallbackCity(type) {
   if (type === 'online') return 'Online';
+
   return '-';
 }
 
 function getEventTypeFallbackLocation(type) {
   if (type === 'online') return 'Online etkinlik';
+
   return '-';
 }
 
@@ -1046,12 +1332,14 @@ function getScopeFallbackUniversity(scope) {
   if (scope === 'city') return 'Şehir geneli';
   if (scope === 'country') return 'Türkiye geneli';
   if (scope === 'online') return 'Online';
+
   return '-';
 }
 
 function getScopeFallbackCity(scope) {
   if (scope === 'country') return 'Türkiye';
   if (scope === 'online') return 'Online';
+
   return '-';
 }
 
@@ -1060,32 +1348,9 @@ function getInitials(name) {
 
   return name
     .split(' ')
+    .filter(Boolean)
     .map((part) => part[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
 }
-document.addEventListener('click', function (event) {
-  const openButton = event.target.closest('#openCreateEventBtn');
-  const closeButton = event.target.closest('#closeCreateEventBtn');
-  const modal = document.getElementById('createEventModal');
-
-  if (openButton && modal) {
-    event.preventDefault();
-
-    if (typeof prefillCreateEventForm === 'function') {
-      prefillCreateEventForm();
-    }
-
-    modal.classList.remove('hidden');
-  }
-
-  if (closeButton && modal) {
-    event.preventDefault();
-    modal.classList.add('hidden');
-  }
-
-  if (event.target === modal) {
-    modal.classList.add('hidden');
-  }
-});
