@@ -208,9 +208,6 @@ class EventReview(db.Model):
     )
 
     def to_dict(self, user_name: str | None = None) -> dict:
-        """
-        Serialize review.
-        """
 
         return {
             "id": self.id,
