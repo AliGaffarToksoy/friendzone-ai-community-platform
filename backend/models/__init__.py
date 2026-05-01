@@ -1,19 +1,22 @@
 """
-Model package for FriendZone.
-
-Import models here so that Flask-Migrate can autogenerate migrations.
+Import all SQLAlchemy models so Flask-Migrate can detect them.
 """
 
-from .user_model import User
-from .community_model import Community, CommunityMember
-from .chat_model import ChatMessage, ChatUserStatus
-from .chat_room_model import ChatRoom
+from backend.models.user_model import User
+from backend.models.community_model import Community, CommunityMember
+from backend.models.chat_model import ChatMessage, ChatUserStatus
+from backend.models.chat_room_model import ChatRoom
+from backend.models.event_model import Event, EventParticipant, EventReview
+
 
 __all__ = [
-    'User',
-    'Community',
-    'CommunityMember',
-    'ChatMessage',
-    'ChatUserStatus',
-    'ChatRoom',
+    "User",
+    "Community",
+    "CommunityMember",
+    "ChatMessage",
+    "ChatUserStatus",
+    "ChatRoom",
+    "Event",
+    "EventParticipant",
+    "EventReview",
 ]

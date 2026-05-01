@@ -8,7 +8,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/chat.css" />
@@ -29,6 +29,11 @@
         <a href="communities.html" class="chat-nav-link">
           <span>←</span>
           Topluluklara Dön
+        </a>
+
+        <a href="events.html" class="chat-nav-link">
+          <span>📅</span>
+          Etkinlikler
         </a>
 
         <a href="profile.html" class="chat-nav-link">
@@ -56,6 +61,12 @@
             <div class="chat-breadcrumb">FriendZone / Topluluk</div>
             <h2 id="communityName">Topluluk yükleniyor...</h2>
             <p id="communityDescription">Topluluk açıklaması yükleniyor...</p>
+
+            <div class="community-context-pills">
+              <span id="communityScopePill">Kapsam: -</span>
+              <span id="communityCityPill">Şehir: -</span>
+              <span id="communityUniversityPill">Üniversite: -</span>
+            </div>
           </div>
         </div>
 
@@ -126,6 +137,23 @@
             <div id="assistantSuggestions" class="assistant-suggestions hidden"></div>
           </section>
 
+          <section class="events-card">
+            <div class="events-card-header">
+              <div>
+                <strong>Topluluk Etkinlikleri</strong>
+                <span id="communityEventCount">0 etkinlik</span>
+              </div>
+
+              <button id="openCreateEventBtn" class="mini-primary-button" type="button">
+                + Etkinlik
+              </button>
+            </div>
+
+            <div id="communityEventsList" class="community-events-list">
+              <div class="empty-state-mini">Etkinlikler yükleniyor...</div>
+            </div>
+          </section>
+
           <section class="members-card">
             <div class="members-header">
               <strong>Topluluk Bilgisi</strong>
@@ -136,6 +164,16 @@
               <div class="info-row">
                 <span>Kategori</span>
                 <strong id="communityCategory">-</strong>
+              </div>
+
+              <div class="info-row">
+                <span>Kapsam</span>
+                <strong id="communityScope">-</strong>
+              </div>
+
+              <div class="info-row">
+                <span>Şehir</span>
+                <strong id="communityCity">-</strong>
               </div>
 
               <div class="info-row">
@@ -161,6 +199,136 @@
         </aside>
       </section>
     </main>
+  </div>
+
+  <div id="createEventModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Create Event</p>
+          <h2>Topluluk etkinliği oluştur</h2>
+        </div>
+
+        <button id="closeCreateEventBtn" class="icon-button" type="button">✕</button>
+      </div>
+
+      <form id="createEventForm" class="create-event-form">
+        <div class="form-group">
+          <label for="eventTitle">Etkinlik Başlığı</label>
+          <input id="eventTitle" type="text" placeholder="Örn: AI Workshop & Networking" required>
+        </div>
+
+        <div class="form-group">
+          <label for="eventDescription">Açıklama</label>
+          <textarea id="eventDescription" rows="4" placeholder="Etkinliğin amacını, içeriğini ve kimlere hitap ettiğini yaz..." required></textarea>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="eventType">Etkinlik Tipi</label>
+            <select id="eventType" required>
+              <option value="offline">Offline</option>
+              <option value="online">Online</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="eventDate">Tarih ve Saat</label>
+            <input id="eventDate" type="datetime-local" required>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="eventCity">Şehir</label>
+            <input id="eventCity" type="text" placeholder="Örn: İstanbul">
+          </div>
+
+          <div class="form-group">
+            <label for="eventLocation">Konum / Link</label>
+            <input id="eventLocation" type="text" placeholder="Salon, kampüs, Google Meet veya Zoom linki">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="eventCapacity">Kapasite</label>
+            <input id="eventCapacity" type="number" min="1" max="5000" placeholder="Opsiyonel">
+          </div>
+
+          <div class="form-group">
+            <label for="eventPoster">Poster Görseli</label>
+            <input id="eventPoster" type="file" accept="image/png,image/jpeg,image/jpg,image/webp">
+            <small>PNG, JPG, JPEG veya WEBP. Maksimum 6MB.</small>
+          </div>
+        </div>
+
+        <button id="createEventSubmitBtn" type="submit" class="primary-action modal-submit">
+          Etkinliği Oluştur
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="eventDetailModal" class="modal-overlay hidden">
+    <div class="modal-card event-detail-modal">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Event Detail</p>
+          <h2 id="modalEventTitle">Etkinlik</h2>
+        </div>
+
+        <button id="closeEventDetailBtn" class="icon-button" type="button">✕</button>
+      </div>
+
+      <div id="modalEventContent" class="modal-event-content"></div>
+
+      <div class="review-box">
+        <div class="review-box-header">
+          <div>
+            <p class="eyebrow">Review</p>
+            <h3>Etkinliği değerlendir</h3>
+          </div>
+        </div>
+
+        <form id="eventReviewForm" class="review-form">
+          <input type="hidden" id="reviewEventId">
+
+          <div class="form-group">
+            <label for="eventRating">Puan</label>
+            <select id="eventRating" required>
+              <option value="">Puan seç</option>
+              <option value="5">5 - Harika</option>
+              <option value="4">4 - İyi</option>
+              <option value="3">3 - Ortalama</option>
+              <option value="2">2 - Zayıf</option>
+              <option value="1">1 - Kötü</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="eventComment">Yorum</label>
+            <textarea id="eventComment" rows="4" maxlength="800" placeholder="Etkinlik hakkındaki yorumunu yaz..."></textarea>
+          </div>
+
+          <button type="submit" class="primary-action">Değerlendirmeyi Kaydet</button>
+        </form>
+      </div>
+
+      <div class="reviews-section">
+        <div class="review-box-header">
+          <div>
+            <p class="eyebrow">Feedback</p>
+            <h3>Etkinlik yorumları</h3>
+          </div>
+        </div>
+
+        <div id="eventReviewsList" class="reviews-list">
+          <div class="empty-card-state">Yorumlar yükleniyor...</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="toast" class="toast hidden"></div>

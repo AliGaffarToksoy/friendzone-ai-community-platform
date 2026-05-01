@@ -91,6 +91,7 @@ def create_app() -> Flask:
     from .routes.chat_routes import chat_bp
     from .routes.assistant_routes import assistant_bp
     from .routes.admin_routes import admin_bp
+    from .routes.event_routes import event_bp
 
     try:
         from .routes.user_routes import user_bp
@@ -104,6 +105,7 @@ def create_app() -> Flask:
     app.register_blueprint(chat_bp, url_prefix="/api/chat")
     app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
     app.register_blueprint(admin_bp, url_prefix="/admin/api")
+    app.register_blueprint(event_bp, url_prefix="/api/events")
 
     from .socket_events import register_socketio_events
     register_socketio_events(socketio)
@@ -113,6 +115,13 @@ def create_app() -> Flask:
     @app.route("/uploads/profile_images/<path:filename>", methods=["GET"])
     def uploaded_profile_image(filename):
         upload_root = Path(app.root_path) / "uploads" / "profile_images"
+        upload_root.mkdir(parents=True, exist_ok=True)
+
+        return send_from_directory(upload_root, filename)
+
+    @app.route("/uploads/event_posters/<path:filename>", methods=["GET"])
+    def uploaded_event_poster(filename):
+        upload_root = Path(app.root_path) / "uploads" / "event_posters"
         upload_root.mkdir(parents=True, exist_ok=True)
 
         return send_from_directory(upload_root, filename)

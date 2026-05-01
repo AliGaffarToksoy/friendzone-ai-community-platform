@@ -4,6 +4,7 @@ let activeCommunityId = null;
 let currentUserId = null;
 let typingTimer = null;
 let isTyping = false;
+let communityEventsCache = [];
 
 const AVAILABLE_REACTIONS = ['👍', '❤️', '😂', '🔥', '👏'];
 
@@ -28,7 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([
     loadCommunityDetails(),
     loadMyCommunitiesForChat(),
-    loadMessages()
+    loadMessages(),
+    loadCommunityEvents()
   ]);
 
   initSocket();
@@ -40,6 +42,15 @@ function bindChatEvents() {
   const refreshBtn = document.getElementById('refreshMessagesBtn');
   const assistantBtn = document.getElementById('assistantBtn');
   const assistantBtnPanel = document.getElementById('assistantBtnPanel');
+
+  const openCreateEventBtn = document.getElementById('openCreateEventBtn');
+  const closeCreateEventBtn = document.getElementById('closeCreateEventBtn');
+  const createEventModal = document.getElementById('createEventModal');
+  const createEventForm = document.getElementById('createEventForm');
+
+  const closeEventDetailBtn = document.getElementById('closeEventDetailBtn');
+  const eventDetailModal = document.getElementById('eventDetailModal');
+  const eventReviewForm = document.getElementById('eventReviewForm');
 
   if (messageForm) {
     messageForm.addEventListener('submit', sendMessage);
@@ -63,6 +74,49 @@ function bindChatEvents() {
   if (assistantBtnPanel) {
     assistantBtnPanel.addEventListener('click', generateAssistantSuggestions);
   }
+
+  if (openCreateEventBtn) {
+    openCreateEventBtn.addEventListener('click', () => {
+      prefillCreateEventForm();
+      createEventModal?.classList.remove('hidden');
+    });
+  }
+
+  if (closeCreateEventBtn) {
+    closeCreateEventBtn.addEventListener('click', () => {
+      createEventModal?.classList.add('hidden');
+    });
+  }
+
+  if (createEventModal) {
+    createEventModal.addEventListener('click', (event) => {
+      if (event.target === createEventModal) {
+        createEventModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (createEventForm) {
+    createEventForm.addEventListener('submit', createCommunityEvent);
+  }
+
+  if (closeEventDetailBtn) {
+    closeEventDetailBtn.addEventListener('click', () => {
+      eventDetailModal?.classList.add('hidden');
+    });
+  }
+
+  if (eventDetailModal) {
+    eventDetailModal.addEventListener('click', (event) => {
+      if (event.target === eventDetailModal) {
+        eventDetailModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (eventReviewForm) {
+    eventReviewForm.addEventListener('submit', submitEventReview);
+  }
 }
 
 async function loadCommunityDetails() {
@@ -80,12 +134,26 @@ async function loadCommunityDetails() {
   const avatar = document.getElementById('communityAvatar');
   const category = document.getElementById('communityCategory');
   const memberCount = document.getElementById('memberCount');
+  const scope = document.getElementById('communityScope');
+  const city = document.getElementById('communityCity');
+
+  const scopePill = document.getElementById('communityScopePill');
+  const cityPill = document.getElementById('communityCityPill');
+  const universityPill = document.getElementById('communityUniversityPill');
 
   if (name) name.textContent = activeCommunity.name;
   if (description) description.textContent = activeCommunity.description || 'Topluluk açıklaması bulunmuyor.';
   if (avatar) avatar.textContent = getInitials(activeCommunity.name);
   if (category) category.textContent = activeCommunity.category || 'Genel';
   if (memberCount) memberCount.textContent = `${activeCommunity.member_count || 0} üye`;
+  if (scope) scope.textContent = getScopeLabel(activeCommunity.scope);
+  if (city) city.textContent = activeCommunity.city || getScopeFallbackCity(activeCommunity.scope);
+
+  if (scopePill) scopePill.textContent = `Kapsam: ${getScopeLabel(activeCommunity.scope)}`;
+  if (cityPill) cityPill.textContent = `Şehir: ${activeCommunity.city || getScopeFallbackCity(activeCommunity.scope)}`;
+  if (universityPill) {
+    universityPill.textContent = `Üniversite: ${activeCommunity.university || getScopeFallbackUniversity(activeCommunity.scope)}`;
+  }
 }
 
 async function loadMyCommunitiesForChat() {
@@ -122,7 +190,7 @@ async function loadMyCommunitiesForChat() {
     title.textContent = community.name;
 
     const meta = document.createElement('span');
-    meta.textContent = community.category || 'Topluluk';
+    meta.textContent = `${community.category || 'Topluluk'} · ${getScopeLabel(community.scope)}`;
 
     info.appendChild(title);
     info.appendChild(meta);
@@ -174,6 +242,132 @@ async function loadMessages() {
   });
 
   scrollChatToBottom();
+}
+
+async function loadCommunityEvents() {
+  const container = document.getElementById('communityEventsList');
+  const count = document.getElementById('communityEventCount');
+
+  if (!container) return;
+
+  container.innerHTML = `<div class="empty-state-mini">Etkinlikler yükleniyor...</div>`;
+
+  const response = await authFetch(`${API_BASE}/api/events/community/${activeCommunityId}`);
+
+  if (!response || !response.success) {
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        ${response?.message || 'Etkinlikler yüklenemedi.'}
+      </div>
+    `;
+    if (count) count.textContent = '0 etkinlik';
+    return;
+  }
+
+  communityEventsCache = response.data || [];
+
+  if (count) count.textContent = `${communityEventsCache.length} etkinlik`;
+
+  renderCommunityEvents();
+}
+
+function renderCommunityEvents() {
+  const container = document.getElementById('communityEventsList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!communityEventsCache.length) {
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        Bu topluluk için henüz etkinlik oluşturulmadı.
+      </div>
+    `;
+    return;
+  }
+
+  communityEventsCache.forEach((event) => {
+    const card = document.createElement('article');
+    card.className = 'community-event-card';
+
+    const poster = document.createElement('div');
+    poster.className = 'community-event-poster';
+
+    if (event.poster_image_url) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}${event.poster_image_url}`;
+      img.alt = event.title;
+      poster.appendChild(img);
+    } else {
+      const fallback = document.createElement('div');
+      fallback.className = `community-event-poster-fallback type-${event.event_type || 'offline'}`;
+      fallback.textContent = getEventTypeIcon(event.event_type);
+      poster.appendChild(fallback);
+    }
+
+    const content = document.createElement('div');
+    content.className = 'community-event-content';
+
+    const top = document.createElement('div');
+    top.className = 'community-event-top';
+
+    const type = document.createElement('span');
+    type.className = `event-type-mini type-${event.event_type || 'offline'}`;
+    type.textContent = getEventTypeLabel(event.event_type);
+
+    const date = document.createElement('span');
+    date.className = 'event-date-mini';
+    date.textContent = formatEventDateShort(event.event_date);
+
+    top.appendChild(type);
+    top.appendChild(date);
+
+    const title = document.createElement('strong');
+    title.textContent = event.title;
+
+    const meta = document.createElement('p');
+    meta.textContent = `${event.city || getEventTypeFallbackCity(event.event_type)} · ${event.location || getEventTypeFallbackLocation(event.event_type)}`;
+
+    const stats = document.createElement('div');
+    stats.className = 'community-event-stats';
+
+    const participant = document.createElement('span');
+    participant.textContent = `${event.participant_count || 0}${event.capacity ? `/${event.capacity}` : ''} katılım`;
+
+    const rating = document.createElement('span');
+    rating.textContent = event.average_rating ? `⭐ ${event.average_rating}/5` : '⭐ Puan yok';
+
+    stats.appendChild(participant);
+    stats.appendChild(rating);
+
+    const actions = document.createElement('div');
+    actions.className = 'community-event-actions';
+
+    const goingBtn = document.createElement('button');
+    goingBtn.type = 'button';
+    goingBtn.textContent = 'Katılıyorum';
+    goingBtn.addEventListener('click', () => updateCommunityEventStatus(event.id, 'going'));
+
+    const detailBtn = document.createElement('button');
+    detailBtn.type = 'button';
+    detailBtn.textContent = 'Detay';
+    detailBtn.addEventListener('click', () => openEventDetail(event.id));
+
+    actions.appendChild(goingBtn);
+    actions.appendChild(detailBtn);
+
+    content.appendChild(top);
+    content.appendChild(title);
+    content.appendChild(meta);
+    content.appendChild(stats);
+    content.appendChild(actions);
+
+    card.appendChild(poster);
+    card.appendChild(content);
+
+    container.appendChild(card);
+  });
 }
 
 function initSocket() {
@@ -441,11 +635,11 @@ async function generateAssistantSuggestions() {
 
   const response = await authFetch(`${API_BASE}/api/assistant/community-suggestion`, {
     method: 'POST',
-  body: JSON.stringify({
-  community_id: activeCommunityId,
-  category: activeCommunity?.category,
-  community_name: activeCommunity?.name
-})
+    body: JSON.stringify({
+      community_id: activeCommunityId,
+      category: activeCommunity?.category,
+      community_name: activeCommunity?.name
+    })
   });
 
   if (!response || !response.success) {
@@ -478,6 +672,262 @@ async function generateAssistantSuggestions() {
   });
 
   suggestionsBox.appendChild(list);
+}
+
+function prefillCreateEventForm() {
+  const cityInput = document.getElementById('eventCity');
+  const locationInput = document.getElementById('eventLocation');
+
+  if (cityInput && !cityInput.value) {
+    cityInput.value = activeCommunity?.city || '';
+  }
+
+  if (locationInput && !locationInput.value && activeCommunity?.scope === 'online') {
+    locationInput.placeholder = 'Google Meet, Zoom veya Discord linki';
+  }
+}
+
+async function createCommunityEvent(event) {
+  event.preventDefault();
+
+  const button = document.getElementById('createEventSubmitBtn');
+  const originalText = button.textContent;
+
+  const formData = new FormData();
+  formData.append('community_id', activeCommunityId);
+  formData.append('title', document.getElementById('eventTitle')?.value.trim() || '');
+  formData.append('description', document.getElementById('eventDescription')?.value.trim() || '');
+  formData.append('event_type', document.getElementById('eventType')?.value || 'offline');
+  formData.append('city', document.getElementById('eventCity')?.value.trim() || '');
+  formData.append('location', document.getElementById('eventLocation')?.value.trim() || '');
+  formData.append('event_date', document.getElementById('eventDate')?.value || '');
+  formData.append('capacity', document.getElementById('eventCapacity')?.value || '');
+
+  const posterInput = document.getElementById('eventPoster');
+  const posterFile = posterInput?.files?.[0];
+
+  if (posterFile) {
+    formData.append('poster', posterFile);
+  }
+
+  button.disabled = true;
+  button.textContent = 'Oluşturuluyor...';
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`${API_BASE}/api/events/create`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      showToast(data.message || 'Etkinlik oluşturulamadı.', 'error');
+      return;
+    }
+
+    showToast('Etkinlik oluşturuldu.', 'success');
+
+    const modal = document.getElementById('createEventModal');
+    const form = document.getElementById('createEventForm');
+
+    if (modal) modal.classList.add('hidden');
+    if (form) form.reset();
+
+    await loadCommunityEvents();
+  } catch (error) {
+    showToast(`Bağlantı hatası: ${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function updateCommunityEventStatus(eventId, status) {
+  const response = await authFetch(`${API_BASE}/api/events/${eventId}/join`, {
+    method: 'POST',
+    body: JSON.stringify({ status })
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Etkinlik katılım durumu güncellenemedi.', 'error');
+    return;
+  }
+
+  showToast('Etkinlik katılım durumu güncellendi.', 'success');
+
+  const updatedEvent = response.data;
+
+  communityEventsCache = communityEventsCache.map((item) => {
+    if (String(item.id) === String(updatedEvent.id)) {
+      return updatedEvent;
+    }
+
+    return item;
+  });
+
+  renderCommunityEvents();
+}
+
+async function openEventDetail(eventId) {
+  const response = await authFetch(`${API_BASE}/api/events/${eventId}`);
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Etkinlik detayı yüklenemedi.', 'error');
+    return;
+  }
+
+  const event = response.data;
+
+  const modal = document.getElementById('eventDetailModal');
+  const title = document.getElementById('modalEventTitle');
+  const content = document.getElementById('modalEventContent');
+  const reviewEventId = document.getElementById('reviewEventId');
+
+  if (title) title.textContent = event.title;
+  if (reviewEventId) reviewEventId.value = event.id;
+
+  if (content) {
+    content.innerHTML = '';
+
+    const posterWrap = document.createElement('div');
+    posterWrap.className = 'modal-poster-wrap';
+
+    if (event.poster_image_url) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}${event.poster_image_url}`;
+      img.alt = event.title;
+      posterWrap.appendChild(img);
+    } else {
+      const fallback = document.createElement('div');
+      fallback.className = `modal-poster-fallback type-${event.event_type || 'offline'}`;
+      fallback.innerHTML = `<span>${getEventTypeIcon(event.event_type)}</span>`;
+      posterWrap.appendChild(fallback);
+    }
+
+    const detail = document.createElement('div');
+    detail.className = 'modal-event-detail';
+
+    const description = document.createElement('p');
+    description.textContent = event.description;
+
+    const meta = document.createElement('div');
+    meta.className = 'event-meta-grid';
+
+    meta.appendChild(createMetaItem('Tarih', formatEventDateLong(event.event_date)));
+    meta.appendChild(createMetaItem('Tip', getEventTypeLabel(event.event_type)));
+    meta.appendChild(createMetaItem('Şehir', event.city || getEventTypeFallbackCity(event.event_type)));
+    meta.appendChild(createMetaItem('Konum', event.location || getEventTypeFallbackLocation(event.event_type)));
+    meta.appendChild(createMetaItem('Katılım', `${event.participant_count || 0}${event.capacity ? `/${event.capacity}` : ''}`));
+    meta.appendChild(createMetaItem('Puan', event.average_rating ? `${event.average_rating}/5` : 'Henüz yok'));
+
+    detail.appendChild(description);
+    detail.appendChild(meta);
+
+    content.appendChild(posterWrap);
+    content.appendChild(detail);
+  }
+
+  if (modal) modal.classList.remove('hidden');
+
+  await loadEventReviews(event.id);
+}
+
+async function loadEventReviews(eventId) {
+  const response = await authFetch(`${API_BASE}/api/events/${eventId}/reviews`);
+  const container = document.getElementById('eventReviewsList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!response || !response.success || !response.data.length) {
+    container.innerHTML = `
+      <div class="empty-card-state">
+        Henüz yorum yapılmadı.
+      </div>
+    `;
+    return;
+  }
+
+  response.data.forEach((review) => {
+    const card = document.createElement('div');
+    card.className = 'review-card';
+
+    const top = document.createElement('div');
+    top.className = 'review-card-top';
+
+    const user = document.createElement('strong');
+    user.textContent = review.user_name || 'FriendZone Kullanıcısı';
+
+    const rating = document.createElement('span');
+    rating.textContent = `⭐ ${review.rating}/5`;
+
+    top.appendChild(user);
+    top.appendChild(rating);
+
+    const comment = document.createElement('p');
+    comment.textContent = review.comment || 'Yorum eklenmedi.';
+
+    card.appendChild(top);
+    card.appendChild(comment);
+
+    container.appendChild(card);
+  });
+}
+
+async function submitEventReview(event) {
+  event.preventDefault();
+
+  const eventId = document.getElementById('reviewEventId')?.value;
+  const rating = document.getElementById('eventRating')?.value;
+  const comment = document.getElementById('eventComment')?.value.trim();
+
+  if (!eventId) {
+    showToast('Etkinlik seçilemedi.', 'error');
+    return;
+  }
+
+  const response = await authFetch(`${API_BASE}/api/events/${eventId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify({
+      rating,
+      comment
+    })
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Yorum kaydedilemedi.', 'error');
+    return;
+  }
+
+  showToast('Değerlendirme kaydedildi.', 'success');
+
+  const form = document.getElementById('eventReviewForm');
+  if (form) form.reset();
+
+  await loadEventReviews(eventId);
+  await loadCommunityEvents();
+}
+
+function createMetaItem(label, value) {
+  const item = document.createElement('div');
+
+  const span = document.createElement('span');
+  span.textContent = label;
+
+  const strong = document.createElement('strong');
+  strong.textContent = value;
+
+  item.appendChild(span);
+  item.appendChild(strong);
+
+  return item;
 }
 
 function showTypingIndicator() {
@@ -522,6 +972,89 @@ function formatMessageTime(timestamp) {
   });
 }
 
+function formatEventDateShort(value) {
+  if (!value) return '-';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return date.toLocaleDateString('tr-TR', {
+    day: '2-digit',
+    month: 'short'
+  });
+}
+
+function formatEventDateLong(value) {
+  if (!value) return '-';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return date.toLocaleString('tr-TR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getEventTypeLabel(type) {
+  const map = {
+    offline: 'Offline',
+    online: 'Online',
+    hybrid: 'Hybrid'
+  };
+
+  return map[type] || 'Offline';
+}
+
+function getEventTypeIcon(type) {
+  const map = {
+    offline: '📍',
+    online: '💻',
+    hybrid: '🌐'
+  };
+
+  return map[type] || '📍';
+}
+
+function getEventTypeFallbackCity(type) {
+  if (type === 'online') return 'Online';
+  return '-';
+}
+
+function getEventTypeFallbackLocation(type) {
+  if (type === 'online') return 'Online etkinlik';
+  return '-';
+}
+
+function getScopeLabel(scope) {
+  const map = {
+    university: 'University',
+    city: 'City',
+    country: 'Country',
+    online: 'Online'
+  };
+
+  return map[scope] || 'Country';
+}
+
+function getScopeFallbackUniversity(scope) {
+  if (scope === 'city') return 'Şehir geneli';
+  if (scope === 'country') return 'Türkiye geneli';
+  if (scope === 'online') return 'Online';
+  return '-';
+}
+
+function getScopeFallbackCity(scope) {
+  if (scope === 'country') return 'Türkiye';
+  if (scope === 'online') return 'Online';
+  return '-';
+}
+
 function getInitials(name) {
   if (!name) return 'FZ';
 
@@ -532,3 +1065,27 @@ function getInitials(name) {
     .slice(0, 2)
     .toUpperCase();
 }
+document.addEventListener('click', function (event) {
+  const openButton = event.target.closest('#openCreateEventBtn');
+  const closeButton = event.target.closest('#closeCreateEventBtn');
+  const modal = document.getElementById('createEventModal');
+
+  if (openButton && modal) {
+    event.preventDefault();
+
+    if (typeof prefillCreateEventForm === 'function') {
+      prefillCreateEventForm();
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  if (closeButton && modal) {
+    event.preventDefault();
+    modal.classList.add('hidden');
+  }
+
+  if (event.target === modal) {
+    modal.classList.add('hidden');
+  }
+});

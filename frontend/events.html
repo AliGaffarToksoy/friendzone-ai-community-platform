@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Etkinlikler - FriendZone</title>
+
+  <link rel="icon" type="image/svg+xml" href="assets/images/friendzone-icon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/events.css" />
+</head>
+
+<body>
+  <div class="events-shell">
+    <aside class="events-sidebar">
+      <a href="index.html" class="events-brand">
+        <div class="brand-mark">FZ</div>
+        <div class="brand-copy">
+          <strong>FriendZone</strong>
+          <span>AI Social Campus</span>
+        </div>
+      </a>
+
+      <nav class="sidebar-nav">
+        <a href="communities.html" class="nav-link">
+          <span>🏠</span>
+          Topluluklar
+        </a>
+
+        <a href="events.html" class="nav-link active">
+          <span>📅</span>
+          Etkinlikler
+        </a>
+
+        <a href="hobbies.html" class="nav-link">
+          <span>✨</span>
+          Hobiler
+        </a>
+
+        <a href="personality_test.html" class="nav-link">
+          <span>🧠</span>
+          Kişilik Testi
+        </a>
+
+        <a href="profile.html" class="nav-link">
+          <span>👤</span>
+          Profil & Ayarlar
+        </a>
+      </nav>
+
+      <section class="events-side-card">
+        <p class="eyebrow">Events</p>
+        <h3>Topluluk etkinliklerini keşfet</h3>
+        <p>
+          Katıldığın toplulukların ve görünür toplulukların etkinliklerini burada takip edebilirsin.
+        </p>
+      </section>
+
+      <section class="events-side-card secondary">
+        <p class="eyebrow">Next Step</p>
+        <h3>Posterli etkinlikler</h3>
+        <p>
+          Topluluk adminleri etkinlik oluştururken poster yükleyebilir. Görseller kalıcı olarak backend uploads klasöründe saklanır.
+        </p>
+      </section>
+
+      <button id="logoutBtn" class="logout-button" type="button">Çıkış Yap</button>
+    </aside>
+
+    <main class="events-main">
+      <section class="events-hero">
+        <div>
+          <p class="eyebrow">Campus Events</p>
+          <h1>Etkinlikleri keşfet ve katılım durumunu yönet</h1>
+          <p>
+            Toplulukların düzenlediği workshop, meetup, seminer, sosyal buluşma, online etkinlik ve hibrit organizasyonları tek yerden takip et.
+          </p>
+
+          <div class="hero-tags">
+            <span>Offline</span>
+            <span>Online</span>
+            <span>Hybrid</span>
+            <span>Reviews</span>
+          </div>
+        </div>
+
+        <div class="hero-summary-card">
+          <strong id="totalEventsCount">0</strong>
+          <span>görünür etkinlik</span>
+          <p>
+            Etkinliklere katılmak için ilgili topluluğa üye olman gerekir.
+          </p>
+        </div>
+      </section>
+
+      <section class="events-toolbar">
+        <div class="search-wrap">
+          <span>🔎</span>
+          <input id="eventSearch" type="text" placeholder="Etkinlik, şehir, açıklama veya konum ara...">
+        </div>
+
+        <select id="eventTypeFilter">
+          <option value="">Tüm tipler</option>
+          <option value="offline">Offline</option>
+          <option value="online">Online</option>
+          <option value="hybrid">Hybrid</option>
+        </select>
+
+        <input id="cityFilter" type="text" placeholder="Şehir filtrele">
+      </section>
+
+      <section class="events-section">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">Explore</p>
+            <h2>Yaklaşan etkinlikler</h2>
+          </div>
+
+          <span id="filteredEventsCount" class="count-pill">0 etkinlik</span>
+        </div>
+
+        <div id="eventsGrid" class="events-grid">
+          <div class="empty-card-state">
+            Etkinlikler yükleniyor...
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="eventDetailModal" class="modal-overlay hidden">
+    <div class="modal-card event-detail-modal">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Event Detail</p>
+          <h2 id="modalEventTitle">Etkinlik</h2>
+        </div>
+        <button id="closeEventDetailBtn" class="icon-button" type="button">✕</button>
+      </div>
+
+      <div id="modalEventContent" class="modal-event-content"></div>
+
+      <div class="review-box">
+        <div class="review-box-header">
+          <div>
+            <p class="eyebrow">Review</p>
+            <h3>Etkinliği değerlendir</h3>
+          </div>
+        </div>
+
+        <form id="eventReviewForm" class="review-form">
+          <input type="hidden" id="reviewEventId">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="eventRating">Puan</label>
+              <select id="eventRating" required>
+                <option value="">Puan seç</option>
+                <option value="5">5 - Harika</option>
+                <option value="4">4 - İyi</option>
+                <option value="3">3 - Ortalama</option>
+                <option value="2">2 - Zayıf</option>
+                <option value="1">1 - Kötü</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="eventComment">Yorum</label>
+            <textarea id="eventComment" rows="4" maxlength="800" placeholder="Etkinlik hakkındaki yorumunu yaz..."></textarea>
+          </div>
+
+          <button type="submit" class="primary-action">Değerlendirmeyi Kaydet</button>
+        </form>
+      </div>
+
+      <div class="reviews-section">
+        <div class="review-box-header">
+          <div>
+            <p class="eyebrow">Feedback</p>
+            <h3>Etkinlik yorumları</h3>
+          </div>
+        </div>
+
+        <div id="eventReviewsList" class="reviews-list">
+          <div class="empty-card-state">Yorumlar yükleniyor...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/eventHandler.js"></script>
+</body>
+</html>

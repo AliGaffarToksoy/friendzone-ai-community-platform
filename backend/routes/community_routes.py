@@ -19,6 +19,7 @@ community_bp = Blueprint("community", __name__)
 
 
 VALID_SCOPES = {"university", "city", "country", "online"}
+VALID_MEMBER_ROLES = {"admin", "moderator", "member"}
 
 
 def ensure_chat_room_for_community(community: Community) -> ChatRoom:
@@ -89,6 +90,81 @@ def get_member_count(community_id: int) -> int:
     ).count()
 
 
+def get_membership(user_id: int, community_id: int) -> CommunityMember | None:
+    """
+    Return active membership for a user in a community.
+    """
+
+    return CommunityMember.query.filter_by(
+        user_id=user_id,
+        community_id=community_id,
+        is_active=True,
+    ).first()
+
+
+def get_admin_count(community_id: int) -> int:
+    """
+    Return active admin count for a community.
+    """
+
+    return CommunityMember.query.filter_by(
+        community_id=community_id,
+        role="admin",
+        is_active=True,
+    ).count()
+
+
+def is_admin(user_id: int, community_id: int) -> bool:
+    """
+    Check whether user is community admin.
+    """
+
+    membership = get_membership(user_id, community_id)
+    return bool(membership and membership.role == "admin")
+
+
+def is_moderator_or_admin(user_id: int, community_id: int) -> bool:
+    """
+    Check whether user can manage community-level operational features.
+    """
+
+    membership = get_membership(user_id, community_id)
+    return bool(membership and membership.role in {"admin", "moderator"})
+
+
+def serialize_member(membership: CommunityMember, viewer_role: str = "member") -> dict:
+    """
+    Serialize community member.
+
+    Admins and moderators can see more operational information.
+    Regular members see basic profile information.
+    """
+
+    user = membership.user
+
+    data = {
+        "membership_id": membership.id,
+        "user_id": membership.user_id,
+        "name": user.name if user else "Bilinmeyen Kullanıcı",
+        "role": membership.role,
+        "joined_at": membership.joined_at.isoformat() if membership.joined_at else None,
+        "is_active": membership.is_active,
+        "message_count": membership.message_count or 0,
+        "profile_image": user.profile_image if user else None,
+        "university": user.university if user else None,
+        "department": user.department if user else None,
+        "year": user.year if user else None,
+        "city": user.city if user else None,
+        "personality_type": user.personality_type if user else None,
+    }
+
+    if viewer_role in {"admin", "moderator"}:
+        data["email"] = user.email if user else None
+        data["last_active"] = membership.last_active.isoformat() if membership.last_active else None
+
+    return data
+
+
 def serialize_community(community: Community, score: float | None = None) -> dict:
     """
     Serialize a community with member count.
@@ -103,12 +179,6 @@ def serialize_community(community: Community, score: float | None = None) -> dic
 def is_community_visible_for_user(community: Community, user: User | None) -> bool:
     """
     Determine whether a community should be visible to the user.
-
-    Visibility behavior:
-    - Not logged in: show country and online communities.
-    - User scope university: show same university + country + online.
-    - User scope city: show same city + country + online.
-    - User scope country: show all active communities.
     """
 
     if not community.is_active:
@@ -285,19 +355,21 @@ def get_community(community_id: int) -> tuple:
     if not community or not community.is_active:
         return error_response("Topluluk bulunamadı.", status_code=404)
 
-    if not is_community_visible_for_user(community, user):
-        membership = CommunityMember.query.filter_by(
-            user_id=user.id,
-            community_id=community.id,
-            is_active=True,
-        ).first()
+    membership = get_membership(user.id, community.id)
 
+    if not is_community_visible_for_user(community, user):
         if not membership:
             return error_response("Bu topluluğu görüntüleme yetkiniz yok.", status_code=403)
 
     room = ensure_chat_room_for_community(community)
 
     data = serialize_community(community)
+    data["current_user_role"] = membership.role if membership else None
+    data["is_current_user_admin"] = bool(membership and membership.role == "admin")
+    data["is_current_user_moderator"] = bool(membership and membership.role == "moderator")
+    data["can_manage_members"] = bool(membership and membership.role == "admin")
+    data["can_manage_events"] = bool(membership and membership.role in {"admin", "moderator"})
+
     data["chat_room"] = {
         "id": room.id,
         "name": room.name,
@@ -307,6 +379,144 @@ def get_community(community_id: int) -> tuple:
     }
 
     return success_response("Topluluk detayı getirildi.", data)
+
+
+@community_bp.route("/<int:community_id>/members", methods=["GET"])
+@jwt_required()
+def list_community_members(community_id: int) -> tuple:
+    """
+    List active members of a community.
+
+    Regular members can see member names and roles.
+    Admins/moderators can see more operational information.
+    """
+
+    current_user_id = int(get_jwt_identity())
+    community = Community.query.get(community_id)
+
+    if not community or not community.is_active:
+        return error_response("Topluluk bulunamadı.", status_code=404)
+
+    viewer_membership = get_membership(current_user_id, community_id)
+
+    if not viewer_membership:
+        return error_response("Üyeleri görüntülemek için topluluğa üye olmalısınız.", status_code=403)
+
+    memberships = (
+        CommunityMember.query
+        .filter_by(community_id=community_id, is_active=True)
+        .order_by(
+            CommunityMember.role.asc(),
+            CommunityMember.joined_at.asc(),
+        )
+        .all()
+    )
+
+    data = {
+        "community_id": community.id,
+        "viewer_role": viewer_membership.role,
+        "can_manage_members": viewer_membership.role == "admin",
+        "can_moderate": viewer_membership.role in {"admin", "moderator"},
+        "members": [
+            serialize_member(membership, viewer_role=viewer_membership.role)
+            for membership in memberships
+        ],
+    }
+
+    return success_response("Topluluk üyeleri getirildi.", data)
+
+
+@community_bp.route("/<int:community_id>/members/<int:target_user_id>/role", methods=["PATCH"])
+@jwt_required()
+def update_member_role(community_id: int, target_user_id: int) -> tuple:
+    """
+    Update a member's role.
+
+    Only community admins can change roles.
+    Admins cannot remove the last admin.
+    """
+
+    current_user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+
+    new_role = str(data.get("role", "")).strip()
+
+    if new_role not in VALID_MEMBER_ROLES:
+        return error_response("Geçersiz rol. Rol admin, moderator veya member olmalıdır.")
+
+    community = Community.query.get(community_id)
+
+    if not community or not community.is_active:
+        return error_response("Topluluk bulunamadı.", status_code=404)
+
+    actor_membership = get_membership(current_user_id, community_id)
+
+    if not actor_membership or actor_membership.role != "admin":
+        return error_response("Rol değiştirmek için topluluk admini olmalısınız.", status_code=403)
+
+    target_membership = get_membership(target_user_id, community_id)
+
+    if not target_membership:
+        return error_response("Hedef kullanıcı bu toplulukta aktif üye değil.", status_code=404)
+
+    if target_membership.role == "admin" and new_role != "admin":
+        if get_admin_count(community_id) <= 1:
+            return error_response("Toplulukta en az bir admin kalmalıdır.", status_code=409)
+
+    target_membership.role = new_role
+    db.session.commit()
+
+    return success_response("Üye rolü güncellendi.", {
+        "community_id": community_id,
+        "user_id": target_user_id,
+        "role": new_role,
+    })
+
+
+@community_bp.route("/<int:community_id>/members/<int:target_user_id>", methods=["DELETE"])
+@jwt_required()
+def remove_community_member(community_id: int, target_user_id: int) -> tuple:
+    """
+    Remove a member from a community.
+
+    Admins can remove anyone except the last admin.
+    Moderators can remove regular members only.
+    """
+
+    current_user_id = int(get_jwt_identity())
+
+    community = Community.query.get(community_id)
+
+    if not community or not community.is_active:
+        return error_response("Topluluk bulunamadı.", status_code=404)
+
+    actor_membership = get_membership(current_user_id, community_id)
+
+    if not actor_membership or actor_membership.role not in {"admin", "moderator"}:
+        return error_response("Üye çıkarmak için admin veya moderatör olmalısınız.", status_code=403)
+
+    target_membership = get_membership(target_user_id, community_id)
+
+    if not target_membership:
+        return error_response("Hedef kullanıcı bu toplulukta aktif üye değil.", status_code=404)
+
+    if target_membership.role == "admin":
+        if actor_membership.role != "admin":
+            return error_response("Moderatörler admin kullanıcıları çıkaramaz.", status_code=403)
+
+        if get_admin_count(community_id) <= 1:
+            return error_response("Topluluktaki son admin çıkarılamaz.", status_code=409)
+
+    if actor_membership.role == "moderator" and target_membership.role in {"admin", "moderator"}:
+        return error_response("Moderatörler yalnızca normal üyeleri çıkarabilir.", status_code=403)
+
+    target_membership.is_active = False
+    db.session.commit()
+
+    return success_response("Üye topluluktan çıkarıldı.", {
+        "community_id": community_id,
+        "user_id": target_user_id,
+    })
 
 
 @community_bp.route("/join", methods=["POST"])
