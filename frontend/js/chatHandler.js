@@ -418,7 +418,10 @@ async function loadCommunityMembers() {
   const container = document.getElementById('communityMembersList');
   const count = document.getElementById('communityMembersCount');
 
-  if (!container) return;
+  if (!container) {
+    console.warn('communityMembersList elementi bulunamadı.');
+    return;
+  }
 
   container.innerHTML = `
     <div class="empty-state-mini">
@@ -426,30 +429,49 @@ async function loadCommunityMembers() {
     </div>
   `;
 
-  const response = await authFetch(`${API_BASE}/api/community/${activeCommunityId}/members`);
+  try {
+    console.log('Üyeler isteniyor:', `${API_BASE}/api/community/${activeCommunityId}/members`);
 
-  if (!response || !response.success) {
+    const response = await authFetch(`${API_BASE}/api/community/${activeCommunityId}/members`);
+
+    console.log('Üyeler API cevabı:', response);
+
+    if (!response || !response.success) {
+      container.innerHTML = `
+        <div class="empty-state-mini">
+          ${response?.message || 'Üyeler yüklenemedi. Backend cevabı alınamadı.'}
+        </div>
+      `;
+
+      if (count) count.textContent = '0 üye';
+      return;
+    }
+
+    const responseData = response.data || {};
+    const members = Array.isArray(responseData.members) ? responseData.members : [];
+
+    communityMembersCache = members;
+
+    communityMembersPermission = {
+      can_manage_members: Boolean(responseData.can_manage_members),
+      can_moderate: Boolean(responseData.can_moderate),
+      viewer_role: responseData.viewer_role || 'member'
+    };
+
+    if (count) count.textContent = `${communityMembersCache.length} üye`;
+
+    renderCommunityMembers();
+  } catch (error) {
+    console.error('Üyeler yüklenirken hata oluştu:', error);
+
     container.innerHTML = `
       <div class="empty-state-mini">
-        ${response?.message || 'Üyeler yüklenemedi.'}
+        Üyeler yüklenirken hata oluştu: ${error.message}
       </div>
     `;
 
     if (count) count.textContent = '0 üye';
-    return;
   }
-
-  communityMembersCache = response.data.members || [];
-
-  communityMembersPermission = {
-    can_manage_members: Boolean(response.data.can_manage_members),
-    can_moderate: Boolean(response.data.can_moderate),
-    viewer_role: response.data.viewer_role || 'member'
-  };
-
-  if (count) count.textContent = `${communityMembersCache.length} üye`;
-
-  renderCommunityMembers();
 }
 
 function renderCommunityMembers() {
@@ -522,15 +544,16 @@ function renderCommunityMembers() {
       const actions = document.createElement('div');
       actions.className = 'member-management-actions';
 
-      const roleSelect = document.createElement('select');
-      roleSelect.className = 'member-role-select';
-      roleSelect.value = member.role || 'member';
+const roleSelect = document.createElement('select');
+roleSelect.className = 'member-role-select';
 
-      roleSelect.innerHTML = `
-        <option value="admin">Admin</option>
-        <option value="moderator">Moderator</option>
-        <option value="member">Member</option>
-      `;
+roleSelect.innerHTML = `
+  <option value="admin">Admin</option>
+  <option value="moderator">Moderator</option>
+  <option value="member">Member</option>
+`;
+
+roleSelect.value = member.role || 'member';
 
       roleSelect.addEventListener('change', () => {
         updateMemberRole(member.user_id, roleSelect.value);
