@@ -8,7 +8,10 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/chat.css" />
@@ -44,12 +47,15 @@
 
       <div class="sidebar-section">
         <div class="section-title">Üye Olduğum Topluluklar</div>
+
         <div id="chatMyCommunities" class="my-communities">
           <div class="empty-state-mini">Yükleniyor...</div>
         </div>
       </div>
 
-      <button id="logoutBtn" class="logout-button">Çıkış Yap</button>
+      <button id="logoutBtn" class="logout-button" type="button">
+        Çıkış Yap
+      </button>
     </aside>
 
     <main class="chat-main">
@@ -59,8 +65,12 @@
 
           <div>
             <div class="chat-breadcrumb">FriendZone / Topluluk</div>
+
             <h2 id="communityName">Topluluk yükleniyor...</h2>
-            <p id="communityDescription">Topluluk açıklaması yükleniyor...</p>
+
+            <p id="communityDescription">
+              Topluluk açıklaması yükleniyor...
+            </p>
 
             <div class="community-context-pills">
               <span id="communityScopePill">Kapsam: -</span>
@@ -71,8 +81,13 @@
         </div>
 
         <div class="chat-topbar-actions">
-          <button id="assistantBtn" class="secondary-action">✨ AI Öneri Al</button>
-          <button id="refreshMessagesBtn" class="primary-action">Mesajları Yenile</button>
+          <button id="assistantBtn" class="secondary-action" type="button">
+            ✨ AI Öneri Al
+          </button>
+
+          <button id="refreshMessagesBtn" class="primary-action" type="button">
+            Mesajları Yenile
+          </button>
         </div>
       </header>
 
@@ -120,6 +135,7 @@
           <section class="assistant-card">
             <div class="assistant-card-header">
               <div class="assistant-icon">✨</div>
+
               <div>
                 <strong>AI Grup Asistanı</strong>
                 <span>Etkinlik, konu ve buz kırıcı önerileri</span>
@@ -130,7 +146,7 @@
               Topluluk kategorisine göre sohbet konusu, mini oyun veya etkinlik fikri üretir.
             </p>
 
-            <button id="assistantBtnPanel" class="assistant-full-button">
+            <button id="assistantBtnPanel" class="assistant-full-button" type="button">
               Öneri Oluştur
             </button>
 
@@ -153,23 +169,23 @@
               <div class="empty-state-mini">Etkinlikler yükleniyor...</div>
             </div>
           </section>
-            
-            <section class="members-management-card">
-  <div class="members-management-header">
-    <div>
-      <strong>Üyeler & Roller</strong>
-      <span id="communityMembersCount">0 üye</span>
-    </div>
 
-    <button id="refreshMembersBtn" class="mini-secondary-button" type="button">
-      Yenile
-    </button>
-  </div>
+          <section class="members-management-card">
+            <div class="members-management-header">
+              <div>
+                <strong>Üyeler & Roller</strong>
+                <span id="communityMembersCount">0 üye</span>
+              </div>
 
-  <div id="communityMembersList" class="community-members-list">
-    <div class="empty-state-mini">Üyeler yükleniyor...</div>
-  </div>
-</section>
+              <button id="refreshMembersBtn" class="mini-secondary-button" type="button">
+                Yenile
+              </button>
+            </div>
+
+            <div id="communityMembersList" class="community-members-list">
+              <div class="empty-state-mini">Üyeler yükleniyor...</div>
+            </div>
+          </section>
 
           <section class="members-card">
             <div class="members-header">
@@ -207,6 +223,7 @@
 
           <section class="rules-card">
             <strong>Topluluk Kuralları</strong>
+
             <ul>
               <li>Saygılı ve yapıcı iletişim kur.</li>
               <li>Kişisel verileri paylaşma.</li>
@@ -226,18 +243,30 @@
           <h2>Topluluk etkinliği oluştur</h2>
         </div>
 
-        <button id="closeCreateEventBtn" class="icon-button" type="button">✕</button>
+        <button id="closeCreateEventBtn" class="icon-button" type="button">
+          ✕
+        </button>
       </div>
 
       <form id="createEventForm" class="create-event-form">
         <div class="form-group">
           <label for="eventTitle">Etkinlik Başlığı</label>
-          <input id="eventTitle" type="text" placeholder="Örn: AI Workshop & Networking" required>
+          <input
+            id="eventTitle"
+            type="text"
+            placeholder="Örn: AI Workshop & Networking"
+            required
+          >
         </div>
 
         <div class="form-group">
           <label for="eventDescription">Açıklama</label>
-          <textarea id="eventDescription" rows="4" placeholder="Etkinliğin amacını, içeriğini ve kimlere hitap ettiğini yaz..." required></textarea>
+          <textarea
+            id="eventDescription"
+            rows="4"
+            placeholder="Etkinliğin amacını, içeriğini ve kimlere hitap ettiğini yaz..."
+            required
+          ></textarea>
         </div>
 
         <div class="form-grid">
@@ -259,24 +288,42 @@
         <div class="form-grid">
           <div class="form-group">
             <label for="eventCity">Şehir</label>
-            <input id="eventCity" type="text" placeholder="Örn: İstanbul">
+            <input
+              id="eventCity"
+              type="text"
+              placeholder="Örn: İstanbul"
+            >
           </div>
 
           <div class="form-group">
             <label for="eventLocation">Konum / Link</label>
-            <input id="eventLocation" type="text" placeholder="Salon, kampüs, Google Meet veya Zoom linki">
+            <input
+              id="eventLocation"
+              type="text"
+              placeholder="Salon, kampüs, Google Meet veya Zoom linki"
+            >
           </div>
         </div>
 
         <div class="form-grid">
           <div class="form-group">
             <label for="eventCapacity">Kapasite</label>
-            <input id="eventCapacity" type="number" min="1" max="5000" placeholder="Opsiyonel">
+            <input
+              id="eventCapacity"
+              type="number"
+              min="1"
+              max="5000"
+              placeholder="Opsiyonel"
+            >
           </div>
 
           <div class="form-group">
             <label for="eventPoster">Poster Görseli</label>
-            <input id="eventPoster" type="file" accept="image/png,image/jpeg,image/jpg,image/webp">
+            <input
+              id="eventPoster"
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+            >
             <small>PNG, JPG, JPEG veya WEBP. Maksimum 6MB.</small>
           </div>
         </div>
@@ -296,7 +343,9 @@
           <h2 id="modalEventTitle">Etkinlik</h2>
         </div>
 
-        <button id="closeEventDetailBtn" class="icon-button" type="button">✕</button>
+        <button id="closeEventDetailBtn" class="icon-button" type="button">
+          ✕
+        </button>
       </div>
 
       <div id="modalEventContent" class="modal-event-content"></div>
@@ -326,10 +375,17 @@
 
           <div class="form-group">
             <label for="eventComment">Yorum</label>
-            <textarea id="eventComment" rows="4" maxlength="800" placeholder="Etkinlik hakkındaki yorumunu yaz..."></textarea>
+            <textarea
+              id="eventComment"
+              rows="4"
+              maxlength="800"
+              placeholder="Etkinlik hakkındaki yorumunu yaz..."
+            ></textarea>
           </div>
 
-          <button type="submit" class="primary-action">Değerlendirmeyi Kaydet</button>
+          <button type="submit" class="primary-action">
+            Değerlendirmeyi Kaydet
+          </button>
         </form>
       </div>
 
