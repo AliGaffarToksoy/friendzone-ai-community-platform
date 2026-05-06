@@ -42,3 +42,5 @@ node_modules/
 # Operating system files
 .DS_Store
 Thumbs.db
+# Uploaded user/media files
+backend/uploads/
