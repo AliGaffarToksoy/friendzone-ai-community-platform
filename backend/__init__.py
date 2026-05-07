@@ -18,7 +18,7 @@ from flask_socketio import SocketIO
 from backend.config import Config
 from backend.database.db_connection import db
 from backend.utils.logger import setup_logger
-
+from .routes.brand_routes import brand_bp
 
 bcrypt = Bcrypt()
 jwt = JWTManager()
@@ -106,6 +106,7 @@ def create_app() -> Flask:
     app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
     app.register_blueprint(admin_bp, url_prefix="/admin/api")
     app.register_blueprint(event_bp, url_prefix="/api/events")
+    app.register_blueprint(brand_bp, url_prefix="/api/brands")
 
     from .socket_events import register_socketio_events
     register_socketio_events(socketio)
@@ -122,6 +123,16 @@ def create_app() -> Flask:
     @app.route("/uploads/event_posters/<path:filename>", methods=["GET"])
     def uploaded_event_poster(filename):
         upload_root = Path(app.root_path) / "uploads" / "event_posters"
+        upload_root.mkdir(parents=True, exist_ok=True)
+
+        return send_from_directory(upload_root, filename)
+
+    @app.route("/uploads/brand_logos/<path:filename>", methods=["GET"])
+    def uploaded_brand_logo(filename):
+        from pathlib import Path
+        from flask import send_from_directory
+
+        upload_root = Path(app.root_path) / "uploads" / "brand_logos"
         upload_root.mkdir(parents=True, exist_ok=True)
 
         return send_from_directory(upload_root, filename)

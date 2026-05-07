@@ -66,35 +66,82 @@ def parse_datetime(value: str | None) -> datetime | None:
         return None
 
 
+def user_membership(user_id: int, community_id: int) -> CommunityMember | None:
+    """
+    Return active community membership for user.
+    """
+
+    return CommunityMember.query.filter_by(
+        user_id=user_id,
+        community_id=community_id,
+        is_active=True,
+    ).first()
+
+
 def user_is_community_member(user_id: int, community_id: int) -> bool:
     """
     Check whether user is active member of a community.
     """
 
-    membership = CommunityMember.query.filter_by(
-        user_id=user_id,
-        community_id=community_id,
-        is_active=True,
-    ).first()
-
-    return membership is not None
+    return user_membership(user_id, community_id) is not None
 
 
-def user_can_manage_community(user_id: int, community_id: int) -> bool:
+def user_can_create_event(user_id: int, community_id: int) -> bool:
     """
     Community admins and moderators can create events.
     """
 
-    membership = CommunityMember.query.filter_by(
-        user_id=user_id,
-        community_id=community_id,
-        is_active=True,
-    ).first()
+    membership = user_membership(user_id, community_id)
 
     if not membership:
         return False
 
     return membership.role in {"admin", "moderator"}
+
+
+def user_can_manage_event(user_id: int, event: Event) -> bool:
+    """
+    Check whether the user can update/delete the event.
+
+    Admins can manage all events in their community.
+    Moderators can manage only events they created.
+    Members cannot manage events.
+    """
+
+    membership = user_membership(user_id, event.community_id)
+
+    if not membership:
+        return False
+
+    if membership.role == "admin":
+        return True
+
+    if membership.role == "moderator" and event.created_by == user_id:
+        return True
+
+    return False
+
+
+def user_can_view_event_participants(user_id: int, event: Event) -> bool:
+    """
+    Check whether user can view event participants.
+
+    Admins and moderators can view participant lists.
+    Event creator can also view participant lists.
+    """
+
+    membership = user_membership(user_id, event.community_id)
+
+    if not membership:
+        return False
+
+    if membership.role in {"admin", "moderator"}:
+        return True
+
+    if event.created_by == user_id:
+        return True
+
+    return False
 
 
 def get_participant_count(event_id: int) -> int:
@@ -142,17 +189,26 @@ def get_average_rating(event_id: int) -> tuple[float | None, int]:
 
 def serialize_event(event: Event, user_id: int | None = None) -> dict:
     """
-    Serialize event with computed statistics.
+    Serialize event with computed statistics and permission flags.
     """
 
     average_rating, review_count = get_average_rating(event.id)
 
-    return event.to_dict(
+    data = event.to_dict(
         participant_count=get_participant_count(event.id),
         user_status=get_user_event_status(event.id, user_id),
         average_rating=average_rating,
         review_count=review_count,
     )
+
+    if user_id:
+        data["can_manage_event"] = user_can_manage_event(user_id, event)
+        data["can_view_participants"] = user_can_view_event_participants(user_id, event)
+    else:
+        data["can_manage_event"] = False
+        data["can_view_participants"] = False
+
+    return data
 
 
 def save_poster_from_request() -> str | None:
@@ -191,6 +247,79 @@ def save_poster_from_request() -> str | None:
     return filename
 
 
+def delete_event_poster_file(filename: str | None) -> None:
+    """
+    Delete event poster file from disk if exists.
+    """
+
+    if not filename:
+        return
+
+    try:
+        poster_path = get_event_upload_root() / filename
+
+        if poster_path.exists() and poster_path.is_file():
+            poster_path.unlink()
+    except Exception as exc:
+        current_app.logger.warning(f"Event poster could not be deleted: {exc}")
+
+
+def get_request_value(name: str, default: str = "") -> str:
+    """
+    Get field from form-data or json body.
+    """
+
+    if request.form:
+        return str(request.form.get(name, default)).strip()
+
+    data = request.get_json(silent=True) or {}
+    return str(data.get(name, default)).strip()
+
+
+def validate_event_payload(
+    title: str,
+    description: str,
+    event_type: str,
+    location: str,
+    event_date: datetime | None,
+) -> tuple[bool, str | None]:
+    """
+    Validate event create/update payload.
+    """
+
+    if not title or len(title) < 3:
+        return False, "Etkinlik başlığı en az 3 karakter olmalıdır."
+
+    if not description or len(description) < 20:
+        return False, "Etkinlik açıklaması en az 20 karakter olmalıdır."
+
+    if event_type not in VALID_EVENT_TYPES:
+        return False, "Geçersiz etkinlik tipi."
+
+    if event_type in {"offline", "hybrid"} and not location:
+        return False, "Yüz yüze veya hibrit etkinliklerde konum zorunludur."
+
+    if not event_date:
+        return False, "Geçerli bir etkinlik tarihi girmelisiniz."
+
+    return True, None
+
+
+def parse_capacity(value: str | None) -> int | None:
+    """
+    Parse event capacity.
+    """
+
+    if not value:
+        return None
+
+    try:
+        capacity = int(value)
+        return max(1, min(5000, capacity))
+    except Exception:
+        return None
+
+
 @event_bp.route("", methods=["GET"])
 @jwt_required()
 def list_events() -> tuple:
@@ -225,6 +354,7 @@ def list_events() -> tuple:
     data = [
         serialize_event(event, user_id=user_id)
         for event in events
+        if user_is_community_member(user_id, event.community_id)
     ]
 
     return success_response("Etkinlikler getirildi.", data)
@@ -287,17 +417,6 @@ def get_event(event_id: int) -> tuple:
 def create_event() -> tuple:
     """
     Create a new community event.
-
-    Accepts multipart/form-data:
-    - community_id
-    - title
-    - description
-    - event_type
-    - city
-    - location
-    - event_date
-    - capacity
-    - poster
     """
 
     user_id = int(get_jwt_identity())
@@ -312,7 +431,7 @@ def create_event() -> tuple:
     if not community or not community.is_active:
         return error_response("Topluluk bulunamadı.", status_code=404)
 
-    if not user_can_manage_community(user_id, community.id):
+    if not user_can_create_event(user_id, community.id):
         return error_response("Etkinlik oluşturmak için topluluk admini veya moderatörü olmalısınız.", status_code=403)
 
     title = str(request.form.get("title", "")).strip()
@@ -321,31 +440,18 @@ def create_event() -> tuple:
     city = str(request.form.get("city", "")).strip()
     location = str(request.form.get("location", "")).strip()
     event_date = parse_datetime(request.form.get("event_date"))
-    capacity_raw = request.form.get("capacity")
+    capacity = parse_capacity(request.form.get("capacity"))
 
-    if not title or len(title) < 3:
-        return error_response("Etkinlik başlığı en az 3 karakter olmalıdır.")
+    is_valid, validation_message = validate_event_payload(
+        title=title,
+        description=description,
+        event_type=event_type,
+        location=location,
+        event_date=event_date,
+    )
 
-    if not description or len(description) < 20:
-        return error_response("Etkinlik açıklaması en az 20 karakter olmalıdır.")
-
-    if event_type not in VALID_EVENT_TYPES:
-        return error_response("Geçersiz etkinlik tipi.")
-
-    if event_type in {"offline", "hybrid"} and not location:
-        return error_response("Yüz yüze veya hibrit etkinliklerde konum zorunludur.")
-
-    if not event_date:
-        return error_response("Geçerli bir etkinlik tarihi girmelisiniz.")
-
-    capacity = None
-
-    if capacity_raw:
-        try:
-            capacity = int(capacity_raw)
-            capacity = max(1, min(5000, capacity))
-        except Exception:
-            capacity = None
+    if not is_valid:
+        return error_response(validation_message or "Etkinlik bilgileri geçersiz.")
 
     poster_filename = None
 
@@ -372,6 +478,153 @@ def create_event() -> tuple:
     db.session.commit()
 
     return success_response("Etkinlik oluşturuldu.", serialize_event(event, user_id=user_id), status_code=201)
+
+
+@event_bp.route("/<int:event_id>", methods=["PATCH"])
+@jwt_required()
+def update_event(event_id: int) -> tuple:
+    """
+    Update an existing event.
+
+    Admins can update all community events.
+    Moderators can update only events they created.
+    """
+
+    user_id = int(get_jwt_identity())
+
+    event = Event.query.get(event_id)
+
+    if not event or not event.is_active:
+        return error_response("Etkinlik bulunamadı.", status_code=404)
+
+    if not user_can_manage_event(user_id, event):
+        return error_response("Bu etkinliği düzenleme yetkiniz yok.", status_code=403)
+
+    title = get_request_value("title", event.title)
+    description = get_request_value("description", event.description)
+    event_type = get_request_value("event_type", event.event_type)
+    city = get_request_value("city", event.city or "")
+    location = get_request_value("location", event.location or "")
+    event_date_raw = get_request_value("event_date", event.event_date.isoformat() if event.event_date else "")
+    event_date = parse_datetime(event_date_raw)
+    capacity = parse_capacity(get_request_value("capacity", str(event.capacity or "")))
+
+    is_valid, validation_message = validate_event_payload(
+        title=title,
+        description=description,
+        event_type=event_type,
+        location=location,
+        event_date=event_date,
+    )
+
+    if not is_valid:
+        return error_response(validation_message or "Etkinlik bilgileri geçersiz.")
+
+    try:
+        new_poster_filename = save_poster_from_request()
+    except ValueError as exc:
+        return error_response(str(exc))
+
+    if new_poster_filename:
+        old_poster = event.poster_image
+        event.poster_image = new_poster_filename
+        delete_event_poster_file(old_poster)
+
+    event.title = title
+    event.description = description
+    event.event_type = event_type
+    event.city = city or None
+    event.location = location or None
+    event.event_date = event_date
+    event.capacity = capacity
+
+    db.session.commit()
+
+    return success_response("Etkinlik güncellendi.", serialize_event(event, user_id=user_id))
+
+
+@event_bp.route("/<int:event_id>", methods=["DELETE"])
+@jwt_required()
+def delete_event(event_id: int) -> tuple:
+    """
+    Soft-delete an event.
+
+    Admins can delete all community events.
+    Moderators can delete only events they created.
+    """
+
+    user_id = int(get_jwt_identity())
+
+    event = Event.query.get(event_id)
+
+    if not event or not event.is_active:
+        return error_response("Etkinlik bulunamadı.", status_code=404)
+
+    if not user_can_manage_event(user_id, event):
+        return error_response("Bu etkinliği silme yetkiniz yok.", status_code=403)
+
+    event.is_active = False
+    db.session.commit()
+
+    return success_response("Etkinlik silindi.", {
+        "event_id": event.id,
+        "is_active": event.is_active,
+    })
+
+
+@event_bp.route("/<int:event_id>/participants", methods=["GET"])
+@jwt_required()
+def list_event_participants(event_id: int) -> tuple:
+    """
+    List event participants.
+
+    Admins/moderators and event creator can see participants.
+    """
+
+    user_id = int(get_jwt_identity())
+
+    event = Event.query.get(event_id)
+
+    if not event or not event.is_active:
+        return error_response("Etkinlik bulunamadı.", status_code=404)
+
+    if not user_can_view_event_participants(user_id, event):
+        return error_response("Katılımcıları görüntüleme yetkiniz yok.", status_code=403)
+
+    participants = (
+        EventParticipant.query
+        .filter(
+            EventParticipant.event_id == event.id,
+            EventParticipant.status.in_(["going", "interested"]),
+        )
+        .order_by(EventParticipant.joined_at.desc())
+        .all()
+    )
+
+    data = []
+
+    for participant in participants:
+        user = User.query.get(participant.user_id)
+
+        data.append({
+            "id": participant.id,
+            "event_id": participant.event_id,
+            "user_id": participant.user_id,
+            "status": participant.status,
+            "joined_at": participant.joined_at.isoformat() if participant.joined_at else None,
+            "user": {
+                "id": user.id if user else None,
+                "name": user.name if user else "Bilinmeyen Kullanıcı",
+                "email": user.email if user else None,
+                "profile_image": user.profile_image if user else None,
+                "university": user.university if user else None,
+                "department": user.department if user else None,
+                "year": user.year if user else None,
+                "city": user.city if user else None,
+            },
+        })
+
+    return success_response("Etkinlik katılımcıları getirildi.", data)
 
 
 @event_bp.route("/<int:event_id>/join", methods=["POST"])

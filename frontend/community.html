@@ -335,6 +335,103 @@
     </div>
   </div>
 
+  <div id="editEventModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Edit Event</p>
+          <h2>Etkinliği düzenle</h2>
+        </div>
+
+        <button id="closeEditEventBtn" class="icon-button" type="button">
+          ✕
+        </button>
+      </div>
+
+      <form id="editEventForm" class="create-event-form">
+        <input type="hidden" id="editEventId">
+
+        <div class="form-group">
+          <label for="editEventTitle">Etkinlik Başlığı</label>
+          <input id="editEventTitle" type="text" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editEventDescription">Açıklama</label>
+          <textarea id="editEventDescription" rows="4" required></textarea>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editEventType">Etkinlik Tipi</label>
+            <select id="editEventType" required>
+              <option value="offline">Offline</option>
+              <option value="online">Online</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="editEventDate">Tarih ve Saat</label>
+            <input id="editEventDate" type="datetime-local" required>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editEventCity">Şehir</label>
+            <input id="editEventCity" type="text">
+          </div>
+
+          <div class="form-group">
+            <label for="editEventLocation">Konum / Link</label>
+            <input id="editEventLocation" type="text">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editEventCapacity">Kapasite</label>
+            <input id="editEventCapacity" type="number" min="1" max="5000">
+          </div>
+
+          <div class="form-group">
+            <label for="editEventPoster">Yeni Poster Görseli</label>
+            <input
+              id="editEventPoster"
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+            >
+            <small>Yeni görsel seçmezsen mevcut poster korunur.</small>
+          </div>
+        </div>
+
+        <button id="editEventSubmitBtn" type="submit" class="primary-action modal-submit">
+          Etkinliği Güncelle
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="eventParticipantsModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Participants</p>
+          <h2>Etkinlik Katılımcıları</h2>
+        </div>
+
+        <button id="closeParticipantsBtn" class="icon-button" type="button">
+          ✕
+        </button>
+      </div>
+
+      <div id="eventParticipantsList" class="participants-list">
+        <div class="empty-card-state">Katılımcılar yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
   <div id="eventDetailModal" class="modal-overlay hidden">
     <div class="modal-card event-detail-modal">
       <div class="modal-header">

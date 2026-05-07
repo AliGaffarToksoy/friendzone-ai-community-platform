@@ -56,6 +56,13 @@ function bindChatEvents() {
   const createEventModal = document.getElementById('createEventModal');
   const createEventForm = document.getElementById('createEventForm');
 
+  const closeEditEventBtn = document.getElementById('closeEditEventBtn');
+  const editEventModal = document.getElementById('editEventModal');
+  const editEventForm = document.getElementById('editEventForm');
+
+  const closeParticipantsBtn = document.getElementById('closeParticipantsBtn');
+  const eventParticipantsModal = document.getElementById('eventParticipantsModal');
+
   const closeEventDetailBtn = document.getElementById('closeEventDetailBtn');
   const eventDetailModal = document.getElementById('eventDetailModal');
   const eventReviewForm = document.getElementById('eventReviewForm');
@@ -88,13 +95,18 @@ function bindChatEvents() {
   if (openCreateEventBtn) {
     openCreateEventBtn.addEventListener('click', () => {
       prefillCreateEventForm();
-      if (createEventModal) createEventModal.classList.remove('hidden');
+
+      if (createEventModal) {
+        createEventModal.classList.remove('hidden');
+      }
     });
   }
 
   if (closeCreateEventBtn) {
     closeCreateEventBtn.addEventListener('click', () => {
-      if (createEventModal) createEventModal.classList.add('hidden');
+      if (createEventModal) {
+        createEventModal.classList.add('hidden');
+      }
     });
   }
 
@@ -110,9 +122,47 @@ function bindChatEvents() {
     createEventForm.addEventListener('submit', createCommunityEvent);
   }
 
+  if (closeEditEventBtn) {
+    closeEditEventBtn.addEventListener('click', () => {
+      if (editEventModal) {
+        editEventModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (editEventModal) {
+    editEventModal.addEventListener('click', (event) => {
+      if (event.target === editEventModal) {
+        editEventModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (editEventForm) {
+    editEventForm.addEventListener('submit', updateCommunityEvent);
+  }
+
+  if (closeParticipantsBtn) {
+    closeParticipantsBtn.addEventListener('click', () => {
+      if (eventParticipantsModal) {
+        eventParticipantsModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (eventParticipantsModal) {
+    eventParticipantsModal.addEventListener('click', (event) => {
+      if (event.target === eventParticipantsModal) {
+        eventParticipantsModal.classList.add('hidden');
+      }
+    });
+  }
+
   if (closeEventDetailBtn) {
     closeEventDetailBtn.addEventListener('click', () => {
-      if (eventDetailModal) eventDetailModal.classList.add('hidden');
+      if (eventDetailModal) {
+        eventDetailModal.classList.add('hidden');
+      }
     });
   }
 
@@ -177,24 +227,6 @@ async function loadCommunityDetails() {
 
   if (universityPill) {
     universityPill.textContent = `Üniversite: ${activeCommunity.university || getScopeFallbackUniversity(activeCommunity.scope)}`;
-  }
-
-  updateCreateEventButtonVisibility();
-}
-
-function updateCreateEventButtonVisibility() {
-  const button = document.getElementById('openCreateEventBtn');
-
-  if (!button || !activeCommunity) return;
-
-  if (activeCommunity.can_manage_events) {
-    button.classList.remove('hidden');
-    button.disabled = false;
-    button.title = 'Etkinlik oluştur';
-  } else {
-    button.classList.remove('hidden');
-    button.disabled = false;
-    button.title = 'Etkinlik oluşturmak için admin veya moderatör olmalısınız.';
   }
 }
 
@@ -401,6 +433,30 @@ function renderCommunityEvents() {
     actions.appendChild(goingBtn);
     actions.appendChild(detailBtn);
 
+    if (event.can_view_participants) {
+      const participantsBtn = document.createElement('button');
+      participantsBtn.type = 'button';
+      participantsBtn.textContent = 'Katılımcılar';
+      participantsBtn.addEventListener('click', () => openEventParticipants(event.id));
+      actions.appendChild(participantsBtn);
+    }
+
+    if (event.can_manage_event) {
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.textContent = 'Düzenle';
+      editBtn.addEventListener('click', () => openEditEventModal(event.id));
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'danger-event-button';
+      deleteBtn.textContent = 'Sil';
+      deleteBtn.addEventListener('click', () => deleteCommunityEvent(event.id, event.title));
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+    }
+
     content.appendChild(top);
     content.appendChild(title);
     content.appendChild(meta);
@@ -430,11 +486,7 @@ async function loadCommunityMembers() {
   `;
 
   try {
-    console.log('Üyeler isteniyor:', `${API_BASE}/api/community/${activeCommunityId}/members`);
-
     const response = await authFetch(`${API_BASE}/api/community/${activeCommunityId}/members`);
-
-    console.log('Üyeler API cevabı:', response);
 
     if (!response || !response.success) {
       container.innerHTML = `
@@ -544,16 +596,16 @@ function renderCommunityMembers() {
       const actions = document.createElement('div');
       actions.className = 'member-management-actions';
 
-const roleSelect = document.createElement('select');
-roleSelect.className = 'member-role-select';
+      const roleSelect = document.createElement('select');
+      roleSelect.className = 'member-role-select';
 
-roleSelect.innerHTML = `
-  <option value="admin">Admin</option>
-  <option value="moderator">Moderator</option>
-  <option value="member">Member</option>
-`;
+      roleSelect.innerHTML = `
+        <option value="admin">Admin</option>
+        <option value="moderator">Moderator</option>
+        <option value="member">Member</option>
+      `;
 
-roleSelect.value = member.role || 'member';
+      roleSelect.value = member.role || 'member';
 
       roleSelect.addEventListener('change', () => {
         updateMemberRole(member.user_id, roleSelect.value);
@@ -587,8 +639,6 @@ function initSocket() {
   });
 
   socket.on('connect', () => {
-    console.log('Socket connected:', socket.id);
-
     setConnectionStatus(true);
 
     socket.emit('join_room', {
@@ -602,8 +652,6 @@ function initSocket() {
   });
 
   socket.on('receive_message', (message) => {
-    console.log('Message received via socket:', message);
-
     if (String(message.community_id) !== String(activeCommunityId)) return;
 
     removeEmptyChatState();
@@ -622,10 +670,7 @@ function initSocket() {
   });
 
   socket.on('reaction_updated', (data) => {
-    console.log('Reaction updated:', data);
-
     if (String(data.community_id) !== String(activeCommunityId)) return;
-
     updateReactionView(data.message_id, data.reactions || {});
   });
 
@@ -965,6 +1010,209 @@ async function createCommunityEvent(event) {
       button.textContent = originalText;
     }
   }
+}
+
+function openEditEventModal(eventId) {
+  const event = communityEventsCache.find((item) => String(item.id) === String(eventId));
+
+  if (!event) {
+    showToast('Etkinlik bulunamadı.', 'error');
+    return;
+  }
+
+  const modal = document.getElementById('editEventModal');
+
+  document.getElementById('editEventId').value = event.id;
+  document.getElementById('editEventTitle').value = event.title || '';
+  document.getElementById('editEventDescription').value = event.description || '';
+  document.getElementById('editEventType').value = event.event_type || 'offline';
+  document.getElementById('editEventDate').value = toDateTimeLocalValue(event.event_date);
+  document.getElementById('editEventCity').value = event.city || '';
+  document.getElementById('editEventLocation').value = event.location || '';
+  document.getElementById('editEventCapacity').value = event.capacity || '';
+
+  const posterInput = document.getElementById('editEventPoster');
+  if (posterInput) posterInput.value = '';
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+async function updateCommunityEvent(event) {
+  event.preventDefault();
+
+  const eventId = document.getElementById('editEventId')?.value;
+  const button = document.getElementById('editEventSubmitBtn');
+  const originalText = button ? button.textContent : 'Etkinliği Güncelle';
+
+  if (!eventId) {
+    showToast('Etkinlik ID bulunamadı.', 'error');
+    return;
+  }
+
+  const formData = new FormData();
+
+  formData.append('title', document.getElementById('editEventTitle')?.value.trim() || '');
+  formData.append('description', document.getElementById('editEventDescription')?.value.trim() || '');
+  formData.append('event_type', document.getElementById('editEventType')?.value || 'offline');
+  formData.append('city', document.getElementById('editEventCity')?.value.trim() || '');
+  formData.append('location', document.getElementById('editEventLocation')?.value.trim() || '');
+  formData.append('event_date', document.getElementById('editEventDate')?.value || '');
+  formData.append('capacity', document.getElementById('editEventCapacity')?.value || '');
+
+  const posterInput = document.getElementById('editEventPoster');
+  const posterFile = posterInput?.files?.[0];
+
+  if (posterFile) {
+    formData.append('poster', posterFile);
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Güncelleniyor...';
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`${API_BASE}/api/events/${eventId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      showToast(data.message || 'Etkinlik güncellenemedi.', 'error');
+      return;
+    }
+
+    showToast('Etkinlik güncellendi.', 'success');
+
+    const modal = document.getElementById('editEventModal');
+    const form = document.getElementById('editEventForm');
+
+    if (modal) modal.classList.add('hidden');
+    if (form) form.reset();
+
+    await loadCommunityEvents();
+  } catch (error) {
+    showToast(`Bağlantı hatası: ${error.message}`, 'error');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
+async function deleteCommunityEvent(eventId, title) {
+  const confirmed = confirm(`"${title || 'Bu etkinlik'}" silinsin mi?`);
+
+  if (!confirmed) return;
+
+  const response = await authFetch(`${API_BASE}/api/events/${eventId}`, {
+    method: 'DELETE'
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Etkinlik silinemedi.', 'error');
+    return;
+  }
+
+  showToast('Etkinlik silindi.', 'success');
+  await loadCommunityEvents();
+}
+
+async function openEventParticipants(eventId) {
+  const modal = document.getElementById('eventParticipantsModal');
+  const container = document.getElementById('eventParticipantsList');
+
+  if (!modal || !container) return;
+
+  container.innerHTML = `
+    <div class="empty-card-state">
+      Katılımcılar yükleniyor...
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+
+  const response = await authFetch(`${API_BASE}/api/events/${eventId}/participants`);
+
+  if (!response || !response.success) {
+    container.innerHTML = `
+      <div class="empty-card-state">
+        ${response?.message || 'Katılımcılar yüklenemedi.'}
+      </div>
+    `;
+    return;
+  }
+
+  renderEventParticipants(response.data || []);
+}
+
+function renderEventParticipants(participants) {
+  const container = document.getElementById('eventParticipantsList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!participants.length) {
+    container.innerHTML = `
+      <div class="empty-card-state">
+        Bu etkinlik için henüz katılımcı yok.
+      </div>
+    `;
+    return;
+  }
+
+  participants.forEach((participant) => {
+    const user = participant.user || {};
+
+    const card = document.createElement('article');
+    card.className = 'participant-card';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'participant-avatar';
+
+    if (user.profile_image) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}/uploads/profile_images/${user.profile_image}`;
+      img.alt = user.name || 'Katılımcı';
+      avatar.appendChild(img);
+    } else {
+      avatar.textContent = getInitials(user.name || 'FZ');
+    }
+
+    const info = document.createElement('div');
+    info.className = 'participant-info';
+
+    const name = document.createElement('strong');
+    name.textContent = user.name || 'Bilinmeyen Kullanıcı';
+
+    const meta = document.createElement('span');
+    meta.textContent = [
+      user.university,
+      user.department,
+      user.city
+    ].filter(Boolean).join(' · ') || 'Katılımcı';
+
+    const status = document.createElement('small');
+    status.textContent = getParticipationStatusLabel(participant.status);
+
+    info.appendChild(name);
+    info.appendChild(meta);
+    info.appendChild(status);
+
+    card.appendChild(avatar);
+    card.appendChild(info);
+
+    container.appendChild(card);
+  });
 }
 
 async function updateCommunityEventStatus(eventId, status) {
@@ -1308,6 +1556,22 @@ function formatEventDateLong(value) {
   });
 }
 
+function toDateTimeLocalValue(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return '';
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
 function getEventTypeLabel(type) {
   const map = {
     offline: 'Offline',
@@ -1364,6 +1628,16 @@ function getScopeFallbackCity(scope) {
   if (scope === 'online') return 'Online';
 
   return '-';
+}
+
+function getParticipationStatusLabel(status) {
+  const map = {
+    going: 'Katılıyor',
+    interested: 'İlgileniyor',
+    cancelled: 'İptal etti'
+  };
+
+  return map[status] || 'Katılımcı';
 }
 
 function getInitials(name) {
