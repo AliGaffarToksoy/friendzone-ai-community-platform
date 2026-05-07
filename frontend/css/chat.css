@@ -1499,3 +1499,85 @@
   gap: 8px !important;
   width: 100% !important;
 }
+.danger-event-button {
+  border-color: rgba(239, 68, 68, 0.28) !important;
+  background: rgba(239, 68, 68, 0.11) !important;
+  color: #fecaca !important;
+}
+
+.danger-event-button:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: white !important;
+}
+
+.participants-list {
+  display: grid;
+  gap: 12px;
+}
+
+.participant-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(30, 41, 59, 0.46);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.participant-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent), #22c55e);
+  color: white;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.participant-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.participant-info {
+  min-width: 0;
+}
+
+.participant-info strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-info span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-info small {
+  display: inline-flex;
+  margin-top: 7px;
+  min-height: 24px;
+  padding: 0 8px;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.16);
+  color: var(--accent-hover);
+  font-size: 11px;
+  font-weight: 900;
+}
