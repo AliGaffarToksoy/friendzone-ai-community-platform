@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Sosyal Profil - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/social-profile.css" />
+</head>
+
+<body>
+  <div class="profile-shell">
+    <aside class="profile-sidebar">
+      <div class="brand compact">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Social Profile</span>
+        </div>
+      </div>
+
+      <nav class="profile-nav">
+        <a href="feed.html" class="profile-nav-link">
+          <span>🏠</span>
+          Ana Akış
+        </a>
+
+        <a href="communities.html" class="profile-nav-link">
+          <span>🌐</span>
+          Topluluklar
+        </a>
+
+        <a href="events.html" class="profile-nav-link">
+          <span>📅</span>
+          Etkinlikler
+        </a>
+
+        <a href="social-profile.html" class="profile-nav-link active">
+          <span>👤</span>
+          Sosyal Profil
+        </a>
+
+        <a href="profile.html" class="profile-nav-link">
+          <span>⚙️</span>
+          Profil Ayarları
+        </a>
+      </nav>
+
+        <a href="certificate-verify.html" class="profile-nav-link">
+
+  <span>🎓</span>
+
+  Sertifika Doğrula
+
+</a>
+
+      <section class="profile-sidebar-card">
+        <strong>Sosyal Kimlik</strong>
+        <p>
+          Toplulukların, paylaşımların, etkinlik katılımların ve sosyal gelişimin burada görünür.
+        </p>
+      </section>
+
+      <button id="logoutBtn" class="logout-button" type="button">
+        Çıkış Yap
+      </button>
+    </aside>
+
+    <main class="profile-main">
+      <section class="profile-cover-card">
+        <div class="profile-cover-bg"></div>
+
+        <div class="profile-main-identity">
+          <div id="profileAvatar" class="profile-avatar-xl">FZ</div>
+
+          <div class="profile-heading">
+            <div class="profile-eyebrow">FriendZone Profile</div>
+
+            <h1 id="profileName">Profil yükleniyor...</h1>
+
+            <p id="profileHeadline">
+              Kullanıcının sosyal ve akademik profili yükleniyor.
+            </p>
+
+            <div class="profile-meta-pills">
+              <span id="profileUniversity">Üniversite: -</span>
+              <span id="profileDepartment">Bölüm: -</span>
+              <span id="profileCity">Şehir: -</span>
+              <span id="profilePersonality">Kişilik: -</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-layout">
+        <section class="profile-left-column">
+          <section class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <p class="profile-eyebrow">About</p>
+                <h2>Hakkımda</h2>
+              </div>
+            </div>
+
+            <p id="profileAbout" class="profile-about-text">
+              Profil bilgileri yükleniyor...
+            </p>
+          </section>
+
+          <section class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <p class="profile-eyebrow">Activity</p>
+                <h2>Son Paylaşımlar</h2>
+              </div>
+
+              <a href="feed.html" class="mini-link-button">
+                Akışa Git
+              </a>
+            </div>
+
+            <div id="profilePostsList" class="profile-posts-list">
+              <div class="profile-empty-state">
+                Paylaşımlar yükleniyor...
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <aside class="profile-right-column">
+          <section class="profile-card score-card">
+            <div class="score-top">
+              <div>
+                <p class="profile-eyebrow">Social Score</p>
+                <h2>Sosyal Puan</h2>
+              </div>
+
+              <div id="socialScoreValue" class="score-circle">
+                0
+              </div>
+            </div>
+
+            <p>
+              Paylaşım yapma, etkinliklere katılma, topluluk yönetme ve yorumlarla sosyal etkileşim puanın artar.
+            </p>
+
+            <div class="score-progress">
+              <div id="socialScoreProgress" class="score-progress-bar"></div>
+            </div>
+
+            <span id="socialScoreLevel" class="score-level">
+              Başlangıç Seviyesi
+            </span>
+          </section>
+
+          <section class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <p class="profile-eyebrow">Communities</p>
+                <h2>Topluluklarım</h2>
+              </div>
+            </div>
+
+            <div id="profileCommunitiesList" class="profile-communities-list">
+              <div class="profile-empty-state">
+                Topluluklar yükleniyor...
+              </div>
+            </div>
+          </section>
+
+          <section class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <p class="profile-eyebrow">Skills</p>
+                <h2>İlgi Alanları</h2>
+              </div>
+            </div>
+
+            <div id="profileHobbiesList" class="profile-tags-list">
+              <span>Yükleniyor...</span>
+            </div>
+          </section>
+
+            <section class="profile-card">
+
+  <div class="profile-card-header">
+
+    <div>
+
+      <p class="profile-eyebrow">Point History</p>
+
+      <h2>Puan Geçmişi</h2>
+
+    </div>
+
+  </div>
+
+  <div id="profilePointHistoryList" class="profile-point-history-list">
+
+    <div class="profile-empty-state">
+
+      Puan geçmişi yükleniyor...
+
+    </div>
+
+  </div>
+
+</section>
+            <section class="profile-card">
+  <div class="profile-card-header">
+    <div>
+      <p class="profile-eyebrow">Certificates</p>
+      <h2>Sertifikalar</h2>
+    </div>
+  </div>
+
+  <div id="profileCertificatesList" class="profile-certificates-list">
+    <div class="profile-empty-state">
+      Sertifikalar yükleniyor...
+    </div>
+  </div>
+</section>
+
+          <section class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <p class="profile-eyebrow">Badges</p>
+                <h2>Rozetler</h2>
+              </div>
+            </div>
+
+            <div id="profileBadgesList" class="profile-badges-list">
+              <div class="badge-card locked">
+                <span>🏁</span>
+                <strong>İlk Adım</strong>
+                <small>Profilini tamamlayınca açılır.</small>
+              </div>
+
+              <div class="badge-card locked">
+                <span>💬</span>
+                <strong>Sohbet Başlatıcı</strong>
+                <small>Topluluklarda aktif oldukça açılır.</small>
+              </div>
+
+              <div class="badge-card locked">
+                <span>📅</span>
+                <strong>Etkinlikçi</strong>
+                <small>Etkinlik oluşturunca açılır.</small>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="certificateModal" class="certificate-modal-overlay hidden">
+  <div class="certificate-modal-card">
+<div class="certificate-modal-header">
+  <div>
+    <p class="profile-eyebrow">FriendZone Certificate</p>
+    <h2 id="certificateModalTitle">Sertifika</h2>
+  </div>
+
+  <div class="certificate-modal-actions">
+    <button id="printCertificateBtn" class="certificate-print-button" type="button">
+      Yazdır / PDF Kaydet
+    </button>
+
+    <button id="closeCertificateModalBtn" class="icon-button" type="button">
+      ✕
+    </button>
+  </div>
+</div>
+
+    <div id="certificatePreview" class="certificate-preview">
+      <div class="certificate-preview-border">
+        <div class="certificate-preview-top">
+          <div id="certificatePreviewIcon" class="certificate-preview-icon">🎓</div>
+
+          <div>
+            <span>FriendZone</span>
+            <strong>Sosyal Başarı Sertifikası</strong>
+          </div>
+        </div>
+
+        <div class="certificate-preview-body">
+          <p class="certificate-presented-label">Bu sertifika</p>
+
+          <h3 id="certificateOwnerName">FriendZone Kullanıcısı</h3>
+
+          <p class="certificate-presented-label">adına düzenlenmiştir.</p>
+
+          <h4 id="certificatePreviewTitle">Sertifika Başlığı</h4>
+
+          <p id="certificatePreviewDescription">
+            Sertifika açıklaması burada görünür.
+          </p>
+        </div>
+
+        <div class="certificate-preview-footer">
+          <div>
+            <span>Sertifika No</span>
+            <strong id="certificatePreviewNumber">-</strong>
+          </div>
+
+          <div>
+            <span>Kazanılma Tarihi</span>
+            <strong id="certificatePreviewDate">-</strong>
+          </div>
+
+          <div>
+            <span>Veren Kurum</span>
+            <strong id="certificatePreviewIssuer">FriendZone</strong>
+          </div>
+        </div>
+
+        <div class="certificate-signature-row">
+          <div>
+            <strong>FriendZone</strong>
+            <span>Social Growth Platform</span>
+          </div>
+
+          <div class="certificate-stamp">
+            FZ
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="certificateLockedNotice" class="certificate-locked-notice hidden">
+      Bu sertifika henüz kazanılmadı. Gerekli puan ve rozet şartlarını tamamladığında otomatik olarak açılacak.
+    </div>
+  </div>
+</div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/socialProfileHandler.js"></script>
+</body>
+</html>

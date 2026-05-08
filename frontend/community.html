@@ -28,22 +28,43 @@
         </div>
       </div>
 
-      <nav class="chat-nav">
-        <a href="communities.html" class="chat-nav-link">
-          <span>←</span>
-          Topluluklara Dön
-        </a>
+<nav class="sidebar-nav">
+  <a href="communities.html" class="nav-link active">
+    <span>🏠</span>
+    Topluluklar
+  </a>
 
-        <a href="events.html" class="chat-nav-link">
-          <span>📅</span>
-          Etkinlikler
-        </a>
+  <a href="feed.html" class="nav-link">
+    <span>🔎</span>
+    Ana Akış
+  </a>
 
-        <a href="profile.html" class="chat-nav-link">
-          <span>👤</span>
-          Profilim
-        </a>
-      </nav>
+  <a href="hobbies.html" class="nav-link">
+    <span>✨</span>
+    Hobiler
+  </a>
+
+  <a href="personality_test.html" class="nav-link">
+    <span>🧠</span>
+    Kişilik Testi
+  </a>
+
+  <a href="social-profile.html" class="nav-link">
+    <span>👤</span>
+    Sosyal Profil
+  </a>
+
+  <a href="profile.html" class="nav-link">
+    <span>⚙️</span>
+    Profil Ayarları
+  </a>
+
+    <a href="certificate-verify.html" class="chat-nav-link">
+     <span>🎓</span>
+      Sertifika Doğrula
+    </a>
+
+</nav>
 
       <div class="sidebar-section">
         <div class="section-title">Üye Olduğum Topluluklar</div>
@@ -429,6 +450,159 @@
       <div id="eventParticipantsList" class="participants-list">
         <div class="empty-card-state">Katılımcılar yükleniyor...</div>
       </div>
+    </div>
+  </div>
+
+  <div id="eventSponsorModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Event Sponsor</p>
+          <h2>Etkinliğe sponsor ekle</h2>
+        </div>
+
+        <button id="closeSponsorModalBtn" class="icon-button" type="button">
+          ✕
+        </button>
+      </div>
+
+      <form id="eventSponsorForm" class="create-event-form">
+        <input type="hidden" id="sponsorEventId">
+
+        <div class="form-group">
+          <label for="sponsorBrandSelect">Marka</label>
+          <select id="sponsorBrandSelect" required>
+            <option value="">Marka seç</option>
+          </select>
+          <small>Önceden oluşturulan markalar arasından seçim yapılır.</small>
+        </div>
+
+        <div class="inline-create-brand-box">
+          <div class="inline-create-brand-header">
+            <div>
+              <strong>Yeni marka mı eklemek istiyorsun?</strong>
+              <span>Red Bull, Cambly, Huawei Cloud gibi sponsor markaları oluşturabilirsin.</span>
+            </div>
+
+            <button id="toggleCreateBrandBtn" type="button" class="mini-secondary-button">
+              Marka Oluştur
+            </button>
+          </div>
+
+          <div id="inlineCreateBrandForm" class="inline-create-brand-form hidden">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="inlineBrandName">Marka Adı</label>
+                <input
+                  id="inlineBrandName"
+                  type="text"
+                  placeholder="Örn: Cambly"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="inlineBrandCategory">Kategori</label>
+                <input
+                  id="inlineBrandCategory"
+                  type="text"
+                  placeholder="Örn: Dil Eğitimi"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="inlineBrandDescription">Marka Açıklaması</label>
+              <textarea
+                id="inlineBrandDescription"
+                rows="3"
+                placeholder="Markanın öğrencilere, topluluklara veya etkinliğe nasıl değer kattığını yaz..."
+              ></textarea>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="inlineBrandWebsite">Web Sitesi</label>
+                <input
+                  id="inlineBrandWebsite"
+                  type="url"
+                  placeholder="https://..."
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="inlineBrandLogo">Logo</label>
+                <input
+                  id="inlineBrandLogo"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="inlineBrandTargetAudience">Hedef Kitle</label>
+              <input
+                id="inlineBrandTargetAudience"
+                type="text"
+                placeholder="Örn: Dil geliştirmek isteyen üniversite öğrencileri"
+              >
+            </div>
+
+            <button id="inlineCreateBrandSubmitBtn" type="button" class="secondary-action">
+              Markayı Kaydet
+            </button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="sponsorType">Sponsorluk Tipi</label>
+            <select id="sponsorType" required>
+              <option value="sponsor">Sponsor</option>
+              <option value="main_sponsor">Ana Sponsor</option>
+              <option value="gold_sponsor">Gold Sponsor</option>
+              <option value="silver_sponsor">Silver Sponsor</option>
+              <option value="bronze_sponsor">Bronze Sponsor</option>
+              <option value="media_sponsor">Medya Sponsoru</option>
+              <option value="education_partner">Eğitim Partneri</option>
+              <option value="technology_partner">Teknoloji Partneri</option>
+              <option value="community_partner">Topluluk Partneri</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="sponsorDisplayOrder">Sıralama</label>
+            <input id="sponsorDisplayOrder" type="number" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="sponsorTitle">Başlık</label>
+          <input
+            id="sponsorTitle"
+            type="text"
+            placeholder="Örn: Ana Sponsor, Enerji Sponsoru, Eğitim Partneri"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="sponsorDescription">Açıklama</label>
+          <textarea
+            id="sponsorDescription"
+            rows="4"
+            placeholder="Sponsorun bu etkinliğe nasıl destek verdiğini yaz..."
+          ></textarea>
+        </div>
+
+        <label class="checkbox-row">
+          <input id="sponsorFeatured" type="checkbox">
+          <span>Öne çıkan sponsor olarak göster</span>
+        </label>
+
+        <button id="eventSponsorSubmitBtn" type="submit" class="primary-action modal-submit">
+          Sponsoru Kaydet
+        </button>
+      </form>
     </div>
   </div>
 

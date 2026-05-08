@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Ana Akış - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/feed.css" />
+</head>
+
+<body>
+  <div class="feed-shell">
+    <aside class="feed-sidebar">
+      <div class="brand compact">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Social Feed</span>
+        </div>
+      </div>
+
+<nav class="sidebar-nav">
+  <a href="communities.html" class="nav-link active">
+    <span>🏠</span>
+    Topluluklar
+  </a>
+
+  <a href="feed.html" class="nav-link">
+    <span>🔎</span>
+    Ana Akış
+  </a>
+
+  <a href="hobbies.html" class="nav-link">
+    <span>✨</span>
+    Hobiler
+  </a>
+
+  <a href="personality_test.html" class="nav-link">
+    <span>🧠</span>
+    Kişilik Testi
+  </a>
+
+  <a href="social-profile.html" class="nav-link">
+    <span>👤</span>
+    Sosyal Profil
+  </a>
+    
+    <a href="certificate-verify.html" class="feed-nav-link">
+  <span>🎓</span>
+  Sertifika Doğrula
+</a>
+
+  <a href="profile.html" class="nav-link">
+    <span>⚙️</span>
+    Profil Ayarları
+  </a>
+</nav>
+
+      <section class="feed-sidebar-card">
+        <strong>FriendZone Feed</strong>
+        <p>
+          Topluluk duyuruları, etkinlik paylaşımları, fikirler, sorular ve sosyal başarılar burada görünür.
+        </p>
+      </section>
+
+      <button id="logoutBtn" class="logout-button" type="button">
+        Çıkış Yap
+      </button>
+    </aside>
+
+    <main class="feed-main">
+      <header class="feed-hero">
+        <div>
+          <div class="feed-eyebrow">FriendZone Social</div>
+          <h1>Ana Akış</h1>
+          <p>
+            Topluluklardan, etkinliklerden ve öğrencilerden gelen en güncel paylaşımları keşfet.
+          </p>
+        </div>
+
+        <div class="feed-hero-actions">
+          <button id="refreshFeedBtn" class="secondary-action" type="button">
+            Yenile
+          </button>
+        </div>
+      </header>
+
+      <section class="feed-layout">
+        <section class="feed-center">
+          <section class="composer-card">
+            <div class="composer-header">
+              <div id="composerAvatar" class="composer-avatar">FZ</div>
+
+              <div>
+                <strong>Bir şey paylaş</strong>
+                <span>Fikir, soru, etkinlik duyurusu veya topluluk güncellemesi paylaş.</span>
+              </div>
+            </div>
+
+            <form id="feedPostForm" class="feed-post-form">
+              <textarea
+                id="feedPostContent"
+                rows="4"
+                maxlength="3000"
+                placeholder="Bugün ne paylaşmak istersin?"
+                required
+              ></textarea>
+
+              <div class="composer-grid">
+                <div class="form-group">
+                  <label for="feedPostType">Paylaşım Tipi</label>
+                  <select id="feedPostType">
+                    <option value="text">Genel Paylaşım</option>
+                    <option value="question">Soru</option>
+                    <option value="idea">Fikir</option>
+                    <option value="achievement">Başarı</option>
+                    <option value="community_update">Topluluk Güncellemesi</option>
+                    <option value="event">Etkinlik</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="feedVisibility">Görünürlük</label>
+                  <select id="feedVisibility">
+                    <option value="public">Herkese Açık</option>
+                    <option value="community">Topluluk</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="composer-grid">
+                <div class="form-group">
+                  <label for="feedCommunitySelect">Topluluk</label>
+                  <select id="feedCommunitySelect">
+                    <option value="">Topluluk seçme</option>
+                  </select>
+                  <small>Topluluk seçersen paylaşım sadece o topluluk akışına düşer.</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="feedLinkUrl">Link</label>
+                  <input
+                    id="feedLinkUrl"
+                    type="url"
+                    placeholder="https://..."
+                  >
+                </div>
+              </div>
+
+              <div class="composer-actions">
+                <span id="composerCounter">0/3000</span>
+
+                <button id="feedPostSubmitBtn" type="submit" class="primary-action">
+                  Paylaş
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section class="feed-tabs">
+            <button class="feed-tab active" type="button" data-scope="all">
+              Sana Özel
+            </button>
+
+            <button class="feed-tab" type="button" data-scope="my_communities">
+              Topluluklarım
+            </button>
+
+            <button class="feed-tab" type="button" data-scope="me">
+              Benim Paylaşımlarım
+            </button>
+          </section>
+
+          <section id="feedPostsList" class="feed-posts-list">
+            <div class="feed-empty-state">
+              <strong>Akış yükleniyor...</strong>
+              <p>Paylaşımlar getiriliyor.</p>
+            </div>
+          </section>
+        </section>
+
+        <aside class="feed-right-panel">
+          <section class="feed-info-card">
+            <strong>Akışta neler paylaşılır?</strong>
+
+            <div class="feed-info-list">
+              <span>💬 Fikir ve düşünceler</span>
+              <span>❓ Sorular</span>
+              <span>🏆 Başarılar</span>
+              <span>📅 Etkinlik duyuruları</span>
+              <span>🌐 Topluluk güncellemeleri</span>
+            </div>
+          </section>
+
+          <section class="feed-info-card">
+            <strong>FriendZone hedefi</strong>
+            <p>
+              LinkedIn’in profesyonel tarafını, X’in fikir akışını, Instagram’ın keşif hissini ve Discord’un topluluk ruhunu öğrenciler için birleştirmek.
+            </p>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="commentsModal" class="feed-modal-overlay hidden">
+    <div class="feed-modal-card">
+      <div class="feed-modal-header">
+        <div>
+          <p class="feed-eyebrow">Comments</p>
+          <h2>Yorumlar</h2>
+        </div>
+
+        <button id="closeCommentsModalBtn" class="icon-button" type="button">
+          ✕
+        </button>
+      </div>
+
+      <div id="commentsList" class="comments-list">
+        <div class="feed-empty-state">
+          Yorumlar yükleniyor...
+        </div>
+      </div>
+
+      <form id="commentForm" class="comment-form">
+        <input type="hidden" id="commentPostId">
+
+        <textarea
+          id="commentContent"
+          rows="3"
+          maxlength="800"
+          placeholder="Yorum yaz..."
+          required
+        ></textarea>
+
+        <button id="commentSubmitBtn" type="submit" class="primary-action">
+          Yorumu Gönder
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/feedHandler.js"></script>
+</body>
+</html>

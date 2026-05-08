@@ -19,6 +19,9 @@ from backend.config import Config
 from backend.database.db_connection import db
 from backend.utils.logger import setup_logger
 from .routes.brand_routes import brand_bp
+from .routes.feed_routes import feed_bp
+from .routes.gamification_routes import gamification_bp
+from .routes.certificate_routes import certificate_bp
 
 bcrypt = Bcrypt()
 jwt = JWTManager()
@@ -107,6 +110,9 @@ def create_app() -> Flask:
     app.register_blueprint(admin_bp, url_prefix="/admin/api")
     app.register_blueprint(event_bp, url_prefix="/api/events")
     app.register_blueprint(brand_bp, url_prefix="/api/brands")
+    app.register_blueprint(feed_bp, url_prefix="/api/feed")
+    app.register_blueprint(gamification_bp, url_prefix="/api/gamification")
+    app.register_blueprint(certificate_bp, url_prefix="/api/certificates")
 
     from .socket_events import register_socketio_events
     register_socketio_events(socketio)

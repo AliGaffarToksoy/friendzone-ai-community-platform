@@ -17,6 +17,7 @@ from backend.database.db_connection import db
 from backend.models.brand_model import Brand, CommunitySponsor, EventSponsor
 from backend.models.community_model import Community, CommunityMember
 from backend.models.event_model import Event
+from backend.services.gamification_service import add_points
 from backend.utils.helpers import error_response, success_response
 
 
@@ -25,6 +26,7 @@ brand_bp = Blueprint("brands", __name__)
 
 ALLOWED_LOGO_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "svg"}
 MAX_LOGO_SIZE_MB = 4
+
 VALID_SPONSORSHIP_TYPES = {
     "sponsor",
     "main_sponsor",
@@ -190,9 +192,9 @@ def get_request_int(name: str, default: int = 0) -> int:
     """
 
     try:
-      return int(get_request_value(name, str(default)))
+        return int(get_request_value(name, str(default)))
     except Exception:
-      return default
+        return default
 
 
 def user_membership(user_id: int, community_id: int) -> CommunityMember | None:
@@ -493,7 +495,11 @@ def list_event_sponsors(event_id: int) -> tuple:
     sponsors = (
         EventSponsor.query
         .filter_by(event_id=event.id, is_active=True)
-        .order_by(EventSponsor.is_featured.desc(), EventSponsor.display_order.asc(), EventSponsor.created_at.asc())
+        .order_by(
+            EventSponsor.is_featured.desc(),
+            EventSponsor.display_order.asc(),
+            EventSponsor.created_at.asc(),
+        )
         .all()
     )
 
@@ -505,6 +511,9 @@ def list_event_sponsors(event_id: int) -> tuple:
 def add_event_sponsor(event_id: int) -> tuple:
     """
     Add sponsor brand to event.
+
+    A new event sponsor relationship gives social points.
+    Updating an existing relationship does not give duplicate points.
     """
 
     user_id = int(get_jwt_identity())
@@ -542,12 +551,18 @@ def add_event_sponsor(event_id: int) -> tuple:
         brand_id=brand.id,
     ).first()
 
+    is_new_sponsor = False
+
     if existing:
         existing.sponsorship_type = sponsorship_type
         existing.title = title or None
         existing.description = description or None
         existing.display_order = int(display_order or 0)
         existing.is_featured = is_featured
+
+        if not existing.is_active:
+            is_new_sponsor = True
+
         existing.is_active = True
         sponsor = existing
     else:
@@ -564,8 +579,20 @@ def add_event_sponsor(event_id: int) -> tuple:
         )
 
         db.session.add(sponsor)
+        db.session.flush()
+        is_new_sponsor = True
 
     db.session.commit()
+
+    if is_new_sponsor:
+        add_points(
+            user_id=user_id,
+            action_type="sponsor_added",
+            description=f"{event.title} etkinliğine sponsor ekledi.",
+            reference_type="event_sponsor",
+            reference_id=sponsor.id,
+            allow_duplicate=False,
+        )
 
     return success_response("Etkinlik sponsoru kaydedildi.", sponsor.to_dict(), status_code=201)
 
@@ -624,7 +651,11 @@ def list_community_sponsors(community_id: int) -> tuple:
     sponsors = (
         CommunitySponsor.query
         .filter_by(community_id=community.id, is_active=True)
-        .order_by(CommunitySponsor.is_featured.desc(), CommunitySponsor.display_order.asc(), CommunitySponsor.created_at.asc())
+        .order_by(
+            CommunitySponsor.is_featured.desc(),
+            CommunitySponsor.display_order.asc(),
+            CommunitySponsor.created_at.asc(),
+        )
         .all()
     )
 
@@ -636,6 +667,9 @@ def list_community_sponsors(community_id: int) -> tuple:
 def add_community_sponsor(community_id: int) -> tuple:
     """
     Add sponsor brand to community.
+
+    A new community sponsor relationship gives social points.
+    Updating an existing relationship does not give duplicate points.
     """
 
     user_id = int(get_jwt_identity())
@@ -673,12 +707,18 @@ def add_community_sponsor(community_id: int) -> tuple:
         brand_id=brand.id,
     ).first()
 
+    is_new_sponsor = False
+
     if existing:
         existing.sponsorship_type = sponsorship_type
         existing.title = title or None
         existing.description = description or None
         existing.display_order = int(display_order or 0)
         existing.is_featured = is_featured
+
+        if not existing.is_active:
+            is_new_sponsor = True
+
         existing.is_active = True
         sponsor = existing
     else:
@@ -695,8 +735,20 @@ def add_community_sponsor(community_id: int) -> tuple:
         )
 
         db.session.add(sponsor)
+        db.session.flush()
+        is_new_sponsor = True
 
     db.session.commit()
+
+    if is_new_sponsor:
+        add_points(
+            user_id=user_id,
+            action_type="sponsor_added",
+            description=f"{community.name} topluluğuna sponsor ekledi.",
+            reference_type="community_sponsor",
+            reference_id=sponsor.id,
+            allow_duplicate=False,
+        )
 
     return success_response("Topluluk sponsoru kaydedildi.", sponsor.to_dict(), status_code=201)
 
