@@ -11,6 +11,7 @@ from backend.database.db_connection import db
 from backend.models.chat_room_model import ChatRoom
 from backend.models.community_model import Community, CommunityMember
 from backend.models.user_model import User
+from backend.services.gamification_service import add_points
 from backend.services.recommendation_service import get_recommended_communities
 from backend.utils.helpers import error_response, success_response
 
@@ -459,12 +460,24 @@ def update_member_role(community_id: int, target_user_id: int) -> tuple:
     if not target_membership:
         return error_response("Hedef kullanıcı bu toplulukta aktif üye değil.", status_code=404)
 
+    old_role = target_membership.role
+
     if target_membership.role == "admin" and new_role != "admin":
         if get_admin_count(community_id) <= 1:
             return error_response("Toplulukta en az bir admin kalmalıdır.", status_code=409)
 
     target_membership.role = new_role
     db.session.commit()
+
+    if old_role != new_role:
+        add_points(
+            user_id=current_user_id,
+            action_type="member_role_updated",
+            description=f"{community.name} topluluğunda üye rolü güncelledi.",
+            reference_type="community_member_role",
+            reference_id=target_membership.id,
+            allow_duplicate=True,
+        )
 
     return success_response("Üye rolü güncellendi.", {
         "community_id": community_id,
@@ -559,6 +572,8 @@ def join_community() -> tuple:
         user_id=user_id,
     ).first()
 
+    joined_now = False
+
     if existing:
         if existing.is_active:
             return success_response("Zaten bu topluluğa üyesiniz.", {
@@ -568,6 +583,7 @@ def join_community() -> tuple:
 
         existing.is_active = True
         existing.role = existing.role or "member"
+        joined_now = True
     else:
         membership = CommunityMember(
             community_id=community.id,
@@ -576,11 +592,23 @@ def join_community() -> tuple:
             is_active=True,
         )
         db.session.add(membership)
+        db.session.flush()
+        joined_now = True
 
     room = ensure_chat_room_for_community(community)
     room.current_members = get_member_count(community.id)
 
     db.session.commit()
+
+    if joined_now:
+        add_points(
+            user_id=user_id,
+            action_type="community_joined",
+            description=f"{community.name} topluluğuna katıldı.",
+            reference_type="community",
+            reference_id=community.id,
+            allow_duplicate=False,
+        )
 
     return success_response("Topluluğa katıldınız.", {
         "community_id": community.id,
@@ -696,6 +724,15 @@ def create_community() -> tuple:
 
     db.session.add(room)
     db.session.commit()
+
+    add_points(
+        user_id=user_id,
+        action_type="community_created",
+        description=f"{community.name} topluluğunu oluşturdu.",
+        reference_type="community",
+        reference_id=community.id,
+        allow_duplicate=False,
+    )
 
     return success_response("Topluluk oluşturuldu.", {
         "community_id": community.id,
