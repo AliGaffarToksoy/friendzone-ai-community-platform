@@ -502,6 +502,7 @@ function bindCertificateModalEvents() {
   const modal = document.getElementById('certificateModal');
   const closeBtn = document.getElementById('closeCertificateModalBtn');
   const printBtn = document.getElementById('printCertificateBtn');
+  const verifyBtn = document.getElementById('verifySelectedCertificateBtn');
 
   if (closeBtn) {
     closeBtn.addEventListener('click', closeCertificateModal);
@@ -509,6 +510,10 @@ function bindCertificateModalEvents() {
 
   if (printBtn) {
     printBtn.addEventListener('click', printSelectedCertificate);
+  }
+
+  if (verifyBtn) {
+    verifyBtn.addEventListener('click', goToCertificateVerification);
   }
 
   if (modal) {
@@ -616,6 +621,22 @@ function printSelectedCertificate() {
   }
 
   window.print();
+}
+
+function goToCertificateVerification() {
+  if (!selectedCertificate) {
+    showToast('Sertifika seçilemedi.', 'error');
+    return;
+  }
+
+  if (!selectedCertificate.earned || !selectedCertificate.certificate_number) {
+    showToast('Kilitli sertifikalar doğrulama sayfasına gönderilemez.', 'error');
+    return;
+  }
+
+  const certificateNumber = encodeURIComponent(selectedCertificate.certificate_number);
+
+  window.location.href = `certificate-verify.html?number=${certificateNumber}`;
 }
 
 
