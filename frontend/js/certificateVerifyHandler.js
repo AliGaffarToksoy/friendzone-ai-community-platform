@@ -29,20 +29,54 @@ function prefillCertificateNumberFromQuery() {
   if (input) {
     input.value = certificateNumber;
   }
+
+  verifyCertificateByNumber(certificateNumber);
 }
 
 async function verifyCertificate(event) {
   event.preventDefault();
 
   const input = document.getElementById('certificateNumberInput');
-  const button = document.getElementById('verifyCertificateBtn');
-
   const certificateNumber = input?.value.trim();
+
+  await verifyCertificateByNumber(certificateNumber);
+}
+
+
+async function verifyCertificateByNumber(certificateNumber) {
+  const button = document.getElementById('verifyCertificateBtn');
 
   if (!certificateNumber) {
     showToast('Sertifika numarası girilmelidir.', 'error');
     return;
   }
+
+  const originalText = button ? button.textContent : 'Sertifikayı Doğrula';
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Doğrulanıyor...';
+  }
+
+  const response = await authFetch(
+    `${API_BASE}/api/certificates/verify/${encodeURIComponent(certificateNumber)}`
+  );
+
+  if (button) {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+
+  if (!response || !response.success) {
+    renderInvalidCertificate(response?.message || 'Sertifika doğrulanamadı.');
+    showToast(response?.message || 'Sertifika doğrulanamadı.', 'error');
+    return;
+  }
+
+  renderValidCertificate(response.data);
+  showToast('Sertifika başarıyla doğrulandı.', 'success');
+}
+
 
   const originalText = button ? button.textContent : 'Sertifikayı Doğrula';
 

@@ -1142,3 +1142,20 @@
     margin: 0;
   }
 }
+.certificate-verify-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(99, 102, 241, 0.32);
+  background: rgba(99, 102, 241, 0.16);
+  color: #c4b5fd;
+  font-size: 12px;
+  font-weight: 900;
+  transition: 0.2s ease;
+}
+
+.certificate-verify-button:hover {
+  background: rgba(99, 102, 241, 0.26);
+  color: white;
+  transform: translateY(-1px);
+}
