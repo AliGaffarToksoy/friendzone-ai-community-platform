@@ -1,14 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const currentUserId = localStorage.getItem('user_id');
-
-  if (!currentUserId) {
-    logout();
-    return;
-  }
-
   bindCertificateVerifyEvents();
   prefillCertificateNumberFromQuery();
+  updatePublicVerifyPageState();
 });
+
+function updatePublicVerifyPageState() {
+  const logoutBtn = document.getElementById('logoutBtn');
+  const currentUserId = localStorage.getItem('user_id');
+
+  if (logoutBtn && !currentUserId) {
+    logoutBtn.textContent = 'Giriş Yap';
+    logoutBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
+}
 
 function bindCertificateVerifyEvents() {
   const form = document.getElementById('certificateVerifyForm');
@@ -58,9 +64,11 @@ async function verifyCertificateByNumber(certificateNumber) {
     button.textContent = 'Doğrulanıyor...';
   }
 
-  const response = await authFetch(
-    `${API_BASE}/api/certificates/verify/${encodeURIComponent(certificateNumber)}`
-  );
+const response = await fetch(
+  `${API_BASE}/api/certificates/verify?number=${encodeURIComponent(certificateNumber)}`
+)
+  .then((res) => res.json())
+  .catch(() => null);
 
   if (button) {
     button.disabled = false;
@@ -85,9 +93,11 @@ async function verifyCertificateByNumber(certificateNumber) {
     button.textContent = 'Doğrulanıyor...';
   }
 
-  const response = await authFetch(
-    `${API_BASE}/api/certificates/verify/${encodeURIComponent(certificateNumber)}`
-  );
+const response = await fetch(
+  `${API_BASE}/api/certificates/verify?number=${encodeURIComponent(certificateNumber)}`
+)
+  .then((res) => res.json())
+  .catch(() => null);
 
   if (button) {
     button.disabled = false;

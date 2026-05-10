@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Sosyal Odalar - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/rooms.css" />
+</head>
+
+<body>
+  <div class="rooms-shell">
+    <aside class="rooms-sidebar">
+      <div class="brand compact">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Social Rooms</span>
+        </div>
+      </div>
+
+      <nav class="rooms-nav">
+        <a href="feed.html" class="rooms-nav-link">
+          <span>🏠</span>
+          Ana Akış
+        </a>
+
+        <a href="communities.html" class="rooms-nav-link">
+          <span>🌐</span>
+          Topluluklar
+        </a>
+
+        <a href="events.html" class="rooms-nav-link">
+          <span>📅</span>
+          Etkinlikler
+        </a>
+
+        <a href="rooms.html" class="rooms-nav-link active">
+          <span>🎙️</span>
+          Sosyal Odalar
+        </a>
+
+        <a href="social-profile.html" class="rooms-nav-link">
+          <span>👤</span>
+          Sosyal Profil
+        </a>
+
+        <a href="certificate-verify.html" class="rooms-nav-link">
+          <span>🎓</span>
+          Sertifika Doğrula
+        </a>
+      </nav>
+
+      <section class="rooms-sidebar-card">
+        <strong>Canlı Sosyal Alanlar</strong>
+        <p>
+          Dil pratiği, oyun buluşmaları, etkinlik öncesi sohbetler ve topluluk odaları burada yönetilir.
+        </p>
+      </section>
+
+      <button id="logoutBtn" class="logout-button" type="button">
+        Çıkış Yap
+      </button>
+    </aside>
+
+    <main class="rooms-main">
+      <section class="rooms-hero">
+        <div>
+          <p class="rooms-eyebrow">Discord + Meet Inspired</p>
+          <h1>Sosyal Odalar</h1>
+          <p>
+            Toplulukların canlı sohbet, dil pratiği, oyun buluşması, ders çalışma ve online etkinlik odalarını keşfet.
+          </p>
+
+          <div class="rooms-hero-pills">
+            <span>🎙️ Sesli oda altyapısı</span>
+            <span>🌐 Topluluk bazlı odalar</span>
+            <span>📅 Etkinlik odaları</span>
+            <span>🔗 Jitsi / Meet link desteği</span>
+          </div>
+        </div>
+
+        <button id="openCreateRoomBtn" class="primary-action" type="button">
+          Yeni Oda Oluştur
+        </button>
+      </section>
+
+      <section class="rooms-toolbar">
+        <div class="rooms-filter-group">
+          <button class="room-filter active" type="button" data-scope="all">
+            Tümü
+          </button>
+
+          <button class="room-filter" type="button" data-scope="joined">
+            Katıldıklarım
+          </button>
+
+          <button class="room-filter" type="button" data-scope="created">
+            Oluşturduklarım
+          </button>
+
+          <button class="room-filter" type="button" data-scope="public">
+            Public
+          </button>
+        </div>
+
+        <div class="rooms-select-group">
+          <select id="roomTypeFilter">
+            <option value="">Tüm Türler</option>
+            <option value="casual">Sohbet</option>
+            <option value="language">Dil Pratiği</option>
+            <option value="gaming">Oyun</option>
+            <option value="study">Ders Çalışma</option>
+            <option value="event">Etkinlik</option>
+            <option value="voice">Sesli</option>
+            <option value="meet">Meet</option>
+          </select>
+
+          <button id="refreshRoomsBtn" class="secondary-action" type="button">
+            Yenile
+          </button>
+        </div>
+      </section>
+
+      <section class="rooms-content">
+        <div id="roomsList" class="rooms-list">
+          <div class="rooms-empty-state">
+            Sosyal odalar yükleniyor...
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="createRoomModal" class="room-modal-overlay hidden">
+    <div class="room-modal-card">
+      <div class="room-modal-header">
+        <div>
+          <p class="rooms-eyebrow">Create Room</p>
+          <h2>Yeni Sosyal Oda</h2>
+        </div>
+
+        <button id="closeCreateRoomBtn" class="icon-button" type="button">
+          ✕
+        </button>
+      </div>
+
+      <form id="createRoomForm" class="create-room-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="roomName">Oda adı</label>
+            <input id="roomName" type="text" placeholder="Örn: İngilizce Pratik Odası" required>
+          </div>
+
+          <div class="form-group">
+            <label for="roomType">Oda tipi</label>
+            <select id="roomType" required>
+              <option value="casual">Sohbet</option>
+              <option value="language">Dil Pratiği</option>
+              <option value="gaming">Oyun</option>
+              <option value="study">Ders Çalışma</option>
+              <option value="event">Etkinlik</option>
+              <option value="voice">Sesli</option>
+              <option value="meet">Meet</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="roomDescription">Açıklama</label>
+          <textarea id="roomDescription" placeholder="Bu odada ne yapılacak?"></textarea>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="roomCommunityId">Topluluk ID</label>
+            <input id="roomCommunityId" type="number" placeholder="Örn: 38">
+          </div>
+
+          <div class="form-group">
+            <label for="roomMaxParticipants">Maksimum katılımcı</label>
+            <input id="roomMaxParticipants" type="number" value="20" min="2" max="500">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="roomMeetingProvider">Toplantı sağlayıcısı</label>
+            <select id="roomMeetingProvider">
+              <option value="">Yok</option>
+              <option value="internal">Internal</option>
+              <option value="jitsi">Jitsi</option>
+              <option value="google_meet">Google Meet</option>
+              <option value="zoom">Zoom</option>
+              <option value="livekit">LiveKit</option>
+              <option value="external">External</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="roomMeetingUrl">Toplantı linki</label>
+            <input id="roomMeetingUrl" type="url" placeholder="https://meet.jit.si/...">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="roomLanguage">Dil</label>
+            <input id="roomLanguage" type="text" placeholder="Örn: English, German">
+          </div>
+
+          <div class="form-group">
+            <label for="roomGameTitle">Oyun adı</label>
+            <input id="roomGameTitle" type="text" placeholder="Örn: Valorant, CS2, PUBG">
+          </div>
+        </div>
+
+        <button id="createRoomSubmitBtn" class="primary-action modal-submit" type="submit">
+          Odayı Oluştur
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/roomsHandler.js"></script>
+</body>
+</html>
