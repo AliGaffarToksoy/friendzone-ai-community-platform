@@ -22,6 +22,7 @@ from .routes.brand_routes import brand_bp
 from .routes.feed_routes import feed_bp
 from .routes.gamification_routes import gamification_bp
 from .routes.certificate_routes import certificate_bp
+from .routes.social_room_routes import social_room_bp
 
 bcrypt = Bcrypt()
 jwt = JWTManager()
@@ -113,6 +114,7 @@ def create_app() -> Flask:
     app.register_blueprint(feed_bp, url_prefix="/api/feed")
     app.register_blueprint(gamification_bp, url_prefix="/api/gamification")
     app.register_blueprint(certificate_bp, url_prefix="/api/certificates")
+    app.register_blueprint(social_room_bp, url_prefix="/api/rooms")
 
     from .socket_events import register_socketio_events
     register_socketio_events(socketio)
