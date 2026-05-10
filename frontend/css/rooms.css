@@ -539,3 +539,609 @@
     width: 100%;
   }
 }
+.community-filter-input {
+
+  min-height: 38px;
+
+  width: 130px;
+
+  border-radius: 14px;
+
+}
+
+.community-filter-input {
+
+  width: 100%;
+
+}
+/* ================================
+   Rooms Page Professional Layout Fix
+================================ */
+
+.rooms-main {
+  padding: 28px;
+}
+
+.rooms-hero {
+  min-height: 230px;
+  align-items: center;
+}
+
+.rooms-hero > div {
+  min-width: 0;
+}
+
+.rooms-hero .primary-action {
+  flex-shrink: 0;
+  min-width: 170px;
+  height: 52px;
+  border-radius: 18px;
+}
+
+/* Toolbar düzeni */
+.rooms-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+}
+
+.rooms-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rooms-select-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.room-filter {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+}
+
+.community-filter-input {
+  width: 150px;
+  min-height: 42px;
+  border-radius: 15px;
+}
+
+.rooms-select-group select {
+  min-width: 180px;
+  min-height: 42px;
+  border-radius: 15px;
+}
+
+.rooms-select-group .secondary-action {
+  min-height: 42px;
+  border-radius: 15px;
+  padding: 0 16px;
+}
+
+/* Kart grid yapısı */
+.rooms-list {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* Kartların ortada tek başına durmasını engeller */
+.room-card {
+  width: 100%;
+  min-height: 300px;
+  align-content: start;
+}
+
+/* Kart üst alanı */
+.room-card-top {
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+}
+
+.room-type-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 22px;
+}
+
+.room-title-wrap h3 {
+  font-size: 19px;
+  max-width: 100%;
+}
+
+.room-title-wrap span {
+  max-width: 100%;
+}
+
+/* Açıklama dengesi */
+.room-description {
+  min-height: 70px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Stat chipleri daha düzenli */
+.room-stats {
+  min-height: 70px;
+  align-content: start;
+}
+
+/* Butonlar */
+.room-actions {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.room-action-button {
+  width: 100%;
+  min-height: 40px;
+}
+
+/* Sil butonu çok baskın durmasın */
+.room-action-button.danger.ghost {
+  opacity: 0.82;
+}
+
+/* Empty state */
+.rooms-empty-state {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+/* Büyük ekranlarda daha iyi içerik genişliği */
+@media (min-width: 1440px) {
+  .rooms-main {
+    padding: 32px;
+  }
+
+  .rooms-list {
+    grid-template-columns: repeat(3, minmax(330px, 1fr));
+  }
+}
+
+/* Orta ekran */
+@media (max-width: 1180px) {
+  .rooms-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .rooms-select-group {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .rooms-list {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+/* Mobil */
+@media (max-width: 720px) {
+  .rooms-main {
+    padding: 18px;
+  }
+
+  .rooms-hero {
+    padding: 22px;
+  }
+
+  .rooms-toolbar {
+    padding: 14px;
+  }
+
+  .rooms-filter-group,
+  .rooms-select-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .room-filter,
+  .community-filter-input,
+  .rooms-select-group select,
+  .rooms-select-group .secondary-action {
+    width: 100%;
+  }
+
+  .rooms-list {
+    grid-template-columns: 1fr;
+  }
+
+  .room-actions {
+    grid-template-columns: 1fr;
+  }
+}
+.room-title-wrap h3 {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ================================
+   Rooms Detail Panel Layout
+================================ */
+
+.rooms-content-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 22px;
+  align-items: start;
+}
+
+.rooms-content-split .rooms-list {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.room-card.selected {
+  border-color: rgba(129, 140, 248, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(129, 140, 248, 0.24),
+    var(--shadow-soft);
+}
+
+.room-detail-panel {
+  position: sticky;
+  top: 24px;
+  min-height: 520px;
+  padding: 22px;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.13), transparent 36%),
+    rgba(15, 23, 42, 0.88);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.room-detail-empty {
+  min-height: 460px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  gap: 10px;
+  color: var(--text-muted);
+}
+
+.room-detail-empty-icon {
+  width: 74px;
+  height: 74px;
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(129, 140, 248, 0.22);
+  font-size: 34px;
+}
+
+.room-detail-empty strong {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.room-detail-empty p {
+  max-width: 280px;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+.room-detail-header {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.room-detail-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 28px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 20px 52px rgba(99, 102, 241, 0.2);
+}
+
+.room-detail-icon.type-language {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+}
+
+.room-detail-icon.type-gaming {
+  background: linear-gradient(135deg, #22c55e, #6366f1);
+}
+
+.room-detail-icon.type-study {
+  background: linear-gradient(135deg, #f59e0b, #6366f1);
+}
+
+.room-detail-icon.type-event {
+  background: linear-gradient(135deg, #ec4899, #6366f1);
+}
+
+.room-detail-icon.type-voice {
+  background: linear-gradient(135deg, #14b8a6, #6366f1);
+}
+
+.room-detail-icon.type-meet {
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+}
+
+.room-detail-title {
+  min-width: 0;
+}
+
+.room-detail-title span {
+  display: block;
+  color: var(--accent-hover);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.room-detail-title h2 {
+  margin-top: 5px;
+  color: var(--text-primary);
+  font-size: 24px;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+}
+
+.room-detail-live {
+  width: fit-content;
+  min-height: 31px;
+  padding: 0 11px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 16px;
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.room-detail-live.active {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.26);
+}
+
+.room-detail-description {
+  margin-bottom: 18px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+.room-detail-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.room-detail-meta-grid div {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(30, 41, 59, 0.46);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.room-detail-meta-grid span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.room-detail-meta-grid strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-detail-actions {
+  display: grid;
+  gap: 9px;
+}
+
+.room-detail-button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 15px;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: rgba(30, 41, 59, 0.58);
+  font-size: 12px;
+  font-weight: 900;
+  transition: 0.2s ease;
+}
+
+.room-detail-button:hover {
+  transform: translateY(-1px);
+  color: white;
+}
+
+.room-detail-button.primary {
+  border: none;
+  background: var(--accent);
+  color: white;
+}
+
+.room-detail-button.secondary {
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.13);
+  border-color: rgba(59, 130, 246, 0.26);
+}
+
+.room-detail-button.danger {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.24);
+}
+
+.room-detail-button.ghost {
+  background: rgba(15, 23, 42, 0.46);
+}
+
+@media (max-width: 1280px) {
+  .rooms-content-split {
+    grid-template-columns: 1fr;
+  }
+
+  .room-detail-panel {
+    position: relative;
+    top: 0;
+    min-height: auto;
+  }
+
+  .room-detail-empty {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 720px) {
+  .room-detail-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================
+   Rooms Page Final Balance Fix
+================================ */
+
+.rooms-content-split {
+  grid-template-columns: minmax(420px, 1fr) minmax(360px, 430px);
+  gap: 24px;
+  align-items: start;
+}
+
+.rooms-content-split .rooms-list {
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 22px;
+}
+
+.room-card {
+  min-height: 320px;
+  padding: 22px;
+}
+
+.room-detail-panel {
+  width: 100%;
+  max-width: 430px;
+  min-height: 560px;
+}
+
+/* Tek oda varken kart çok dar kalmasın */
+.rooms-list:has(.room-card:only-child) {
+  grid-template-columns: minmax(420px, 520px);
+}
+
+/* Toolbar daha dengeli dursun */
+.rooms-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.rooms-filter-group {
+  justify-content: flex-start;
+}
+
+.rooms-select-group {
+  justify-content: flex-end;
+}
+
+/* Hero ile içerik aynı genişlik hissini versin */
+.rooms-main {
+  max-width: 1560px;
+}
+
+/* Kart başlıkları daha rahat okunsun */
+.room-title-wrap h3 {
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+/* Detay panel başlığı daha premium */
+.room-detail-title h2 {
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+/* Oda açıklaması daha iyi nefes alsın */
+.room-detail-description {
+  font-size: 15px;
+}
+
+/* Sağ boşluk çok hissedilmesin diye içerik panelini büyüt */
+@media (min-width: 1281px) {
+  .rooms-content-split {
+    max-width: 1180px;
+  }
+}
+
+/* Büyük ekranlarda biraz daha yayıl */
+@media (min-width: 1500px) {
+  .rooms-content-split {
+    max-width: 1280px;
+  }
+
+  .rooms-content-split .rooms-list {
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  }
+}
+
+/* Orta ekranlarda detay panel alta insin */
+@media (max-width: 1180px) {
+  .rooms-content-split {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+
+  .room-detail-panel {
+    max-width: none;
+  }
+
+  .rooms-content-split .rooms-list {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+.rooms-content {
+  width: 100%;
+}
+
+.rooms-content-split {
+  margin-right: auto;
+}
