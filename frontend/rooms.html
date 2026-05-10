@@ -113,31 +113,47 @@
           </button>
         </div>
 
-        <div class="rooms-select-group">
-          <select id="roomTypeFilter">
-            <option value="">Tüm Türler</option>
-            <option value="casual">Sohbet</option>
-            <option value="language">Dil Pratiği</option>
-            <option value="gaming">Oyun</option>
-            <option value="study">Ders Çalışma</option>
-            <option value="event">Etkinlik</option>
-            <option value="voice">Sesli</option>
-            <option value="meet">Meet</option>
-          </select>
+<div class="rooms-select-group">
+  <input
+    id="communityFilterInput"
+    type="number"
+    placeholder="Topluluk ID"
+    class="community-filter-input"
+  />
 
-          <button id="refreshRoomsBtn" class="secondary-action" type="button">
-            Yenile
-          </button>
-        </div>
-      </section>
+  <select id="roomTypeFilter">
+    <option value="">Tüm Türler</option>
+    <option value="casual">Sohbet</option>
+    <option value="language">Dil Pratiği</option>
+    <option value="gaming">Oyun</option>
+    <option value="study">Ders Çalışma</option>
+    <option value="event">Etkinlik</option>
+    <option value="voice">Sesli</option>
+    <option value="meet">Meet</option>
+  </select>
 
-      <section class="rooms-content">
-        <div id="roomsList" class="rooms-list">
-          <div class="rooms-empty-state">
-            Sosyal odalar yükleniyor...
-          </div>
-        </div>
-      </section>
+  <button id="refreshRoomsBtn" class="secondary-action" type="button">
+    Yenile
+  </button>
+</div>
+
+<section class="rooms-content rooms-content-split">
+  <div id="roomsList" class="rooms-list">
+    <div class="rooms-empty-state">
+      Sosyal odalar yükleniyor...
+    </div>
+  </div>
+
+  <aside id="roomDetailPanel" class="room-detail-panel">
+    <div class="room-detail-empty">
+      <div class="room-detail-empty-icon">🎙️</div>
+      <strong>Bir oda seç</strong>
+      <p>
+        Oda kartlarından birine tıklayarak detayları, katılım durumunu ve toplantı linkini burada görüntüleyebilirsin.
+      </p>
+    </div>
+  </aside>
+</section>
     </main>
   </div>
 

@@ -1,5 +1,6 @@
 let roomsCache = [];
 let activeRoomScope = 'all';
+let selectedRoomId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const currentUserId = localStorage.getItem('user_id');
@@ -22,6 +23,7 @@ function bindRoomEvents() {
   const createRoomForm = document.getElementById('createRoomForm');
   const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
   const roomTypeFilter = document.getElementById('roomTypeFilter');
+  const communityFilterInput = document.getElementById('communityFilterInput');
 
   document.querySelectorAll('.room-filter').forEach((button) => {
     button.addEventListener('click', async () => {
@@ -74,6 +76,11 @@ function bindRoomEvents() {
   if (roomTypeFilter) {
     roomTypeFilter.addEventListener('change', loadRooms);
   }
+
+  if (communityFilterInput) {
+  communityFilterInput.addEventListener('change', loadRooms);
+}
+
 }
 
 function prefillRoomCommunityFromQuery() {
@@ -82,16 +89,22 @@ function prefillRoomCommunityFromQuery() {
 
   if (!communityId) return;
 
-  const input = document.getElementById('roomCommunityId');
+  const createInput = document.getElementById('roomCommunityId');
+  const filterInput = document.getElementById('communityFilterInput');
 
-  if (input) {
-    input.value = communityId;
+  if (createInput) {
+    createInput.value = communityId;
+  }
+
+  if (filterInput) {
+    filterInput.value = communityId;
   }
 }
 
 async function loadRooms() {
   const container = document.getElementById('roomsList');
   const roomTypeFilter = document.getElementById('roomTypeFilter');
+  const communityFilterInput = document.getElementById('communityFilterInput');
 
   if (!container) return;
 
@@ -107,6 +120,10 @@ async function loadRooms() {
 
   if (roomTypeFilter && roomTypeFilter.value) {
     params.set('room_type', roomTypeFilter.value);
+  }
+
+  if (communityFilterInput && communityFilterInput.value) {
+    params.set('community_id', communityFilterInput.value);
   }
 
   const response = await authFetch(`${API_BASE}/api/rooms?${params.toString()}`);
@@ -138,17 +155,41 @@ function renderRooms() {
         Henüz bu filtreye uygun sosyal oda bulunmuyor. İlk odayı sen oluşturabilirsin.
       </div>
     `;
+    renderRoomDetail(null);
     return;
+  }
+
+  if (!selectedRoomId || !roomsCache.some((room) => room.id === selectedRoomId)) {
+    selectedRoomId = roomsCache[0].id;
   }
 
   roomsCache.forEach((room) => {
     container.appendChild(createRoomCard(room));
   });
+
+  const selectedRoom = roomsCache.find((room) => room.id === selectedRoomId);
+  renderRoomDetail(selectedRoom || roomsCache[0]);
 }
 
 function createRoomCard(room) {
   const card = document.createElement('article');
   card.className = room.is_live ? 'room-card live' : 'room-card';
+
+  if (selectedRoomId === room.id) {
+  card.classList.add('selected');
+}
+
+card.addEventListener('click', (event) => {
+  if (
+    event.target.closest('button') ||
+    event.target.closest('a')
+  ) {
+    return;
+  }
+
+  selectedRoomId = room.id;
+  renderRooms();
+});
 
   const top = document.createElement('div');
   top.className = 'room-card-top';
@@ -265,6 +306,154 @@ function createRoomCard(room) {
   card.appendChild(actions);
 
   return card;
+}
+
+function renderRoomDetail(room) {
+  const panel = document.getElementById('roomDetailPanel');
+
+  if (!panel) return;
+
+  if (!room) {
+    panel.innerHTML = `
+      <div class="room-detail-empty">
+        <div class="room-detail-empty-icon">🎙️</div>
+        <strong>Bir oda seç</strong>
+        <p>
+          Oda kartlarından birine tıklayarak detayları, katılım durumunu ve toplantı linkini burada görüntüleyebilirsin.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  panel.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'room-detail-header';
+
+  const icon = document.createElement('div');
+  icon.className = `room-detail-icon type-${room.room_type || 'casual'}`;
+  icon.textContent = getRoomTypeIcon(room.room_type);
+
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'room-detail-title';
+
+  const eyebrow = document.createElement('span');
+  eyebrow.textContent = getRoomTypeLabel(room.room_type);
+
+  const title = document.createElement('h2');
+  title.textContent = room.name || 'Sosyal Oda';
+
+  titleWrap.appendChild(eyebrow);
+  titleWrap.appendChild(title);
+
+  header.appendChild(icon);
+  header.appendChild(titleWrap);
+
+  const live = document.createElement('div');
+  live.className = room.is_live ? 'room-detail-live active' : 'room-detail-live';
+  live.textContent = room.is_live ? 'Canlı Oda' : 'Pasif Oda';
+
+  const description = document.createElement('p');
+  description.className = 'room-detail-description';
+  description.textContent = room.description || 'Bu oda için açıklama eklenmemiş.';
+
+  const metaGrid = document.createElement('div');
+  metaGrid.className = 'room-detail-meta-grid';
+
+  metaGrid.appendChild(createRoomDetailMeta('Katılımcı', `${room.current_participants || 0}/${room.max_participants || 0}`));
+  metaGrid.appendChild(createRoomDetailMeta('Görünürlük', getVisibilityLabel(room.visibility)));
+  metaGrid.appendChild(createRoomDetailMeta('Topluluk', room.community_name || '-'));
+  metaGrid.appendChild(createRoomDetailMeta('Oluşturan', room.creator_name || '-'));
+
+  if (room.language) {
+    metaGrid.appendChild(createRoomDetailMeta('Dil', room.language));
+  }
+
+  if (room.game_title) {
+    metaGrid.appendChild(createRoomDetailMeta('Oyun', room.game_title));
+  }
+
+  if (room.meeting_provider) {
+    metaGrid.appendChild(createRoomDetailMeta('Sağlayıcı', getMeetingProviderLabel(room.meeting_provider)));
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'room-detail-actions';
+
+  const joinBtn = document.createElement('button');
+  joinBtn.type = 'button';
+  joinBtn.className = room.viewer_status === 'joined'
+    ? 'room-detail-button danger'
+    : 'room-detail-button primary';
+
+  joinBtn.textContent = room.viewer_status === 'joined'
+    ? 'Odadan Ayrıl'
+    : 'Odaya Katıl';
+
+  joinBtn.addEventListener('click', async () => {
+    if (room.viewer_status === 'joined') {
+      await leaveRoom(room.id);
+    } else {
+      await joinRoom(room.id);
+    }
+  });
+
+  actions.appendChild(joinBtn);
+
+  if (room.meeting_url) {
+    const meetingBtn = document.createElement('a');
+    meetingBtn.className = 'room-detail-button secondary';
+    meetingBtn.href = room.meeting_url;
+    meetingBtn.target = '_blank';
+    meetingBtn.rel = 'noopener noreferrer';
+    meetingBtn.textContent = getMeetingButtonText(room.meeting_provider);
+    actions.appendChild(meetingBtn);
+  }
+
+  const participantsBtn = document.createElement('button');
+  participantsBtn.type = 'button';
+  participantsBtn.className = 'room-detail-button ghost';
+  participantsBtn.textContent = 'Katılımcıları Göster';
+  participantsBtn.addEventListener('click', () => {
+    loadRoomParticipants(room.id, room.name);
+  });
+
+  actions.appendChild(participantsBtn);
+
+  panel.appendChild(header);
+  panel.appendChild(live);
+  panel.appendChild(description);
+  panel.appendChild(metaGrid);
+  panel.appendChild(actions);
+}
+
+function createRoomDetailMeta(label, value) {
+  const item = document.createElement('div');
+
+  const span = document.createElement('span');
+  span.textContent = label;
+
+  const strong = document.createElement('strong');
+  strong.textContent = value || '-';
+
+  item.appendChild(span);
+  item.appendChild(strong);
+
+  return item;
+}
+
+function getMeetingProviderLabel(provider) {
+  const map = {
+    internal: 'Platform İçi',
+    jitsi: 'Jitsi Meet',
+    google_meet: 'Google Meet',
+    zoom: 'Zoom',
+    livekit: 'LiveKit',
+    external: 'Harici Link'
+  };
+
+  return map[provider] || '-';
 }
 
 function createRoomStat(icon, value) {

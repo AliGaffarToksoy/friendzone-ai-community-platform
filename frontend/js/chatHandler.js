@@ -8,6 +8,8 @@ let communityEventsCache = [];
 let communityMembersCache = [];
 let brandsCache = [];
 let eventSponsorsCache = {};
+let communityRoomsCache = [];
+let eventRoomsCache = {};
 
 let communityMembersPermission = {
   can_manage_members: false,
@@ -40,7 +42,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadMyCommunitiesForChat(),
     loadMessages(),
     loadCommunityEvents(),
-    loadCommunityMembers()
+    loadCommunityMembers(),
+    loadCommunityRooms()
   ]);
 
   initSocket();
@@ -320,6 +323,71 @@ async function loadMyCommunitiesForChat() {
   });
 }
 
+async function loadEventRoom(eventId) {
+  if (!eventId) return null;
+
+  if (eventRoomsCache[eventId]) {
+    return eventRoomsCache[eventId];
+  }
+
+  const params = new URLSearchParams();
+  params.set('event_id', eventId);
+
+  const response = await authFetch(`${API_BASE}/api/rooms?${params.toString()}`);
+
+  if (!response || !response.success) {
+    eventRoomsCache[eventId] = null;
+    return null;
+  }
+
+  const rooms = response.data || [];
+  const eventRoom = rooms.find((room) => Number(room.event_id) === Number(eventId)) || null;
+
+  eventRoomsCache[eventId] = eventRoom;
+
+  return eventRoom;
+}
+
+async function createRoomForEvent(eventItem) {
+  if (!eventItem || !eventItem.id) {
+    showToast('Etkinlik bilgisi alınamadı.', 'error');
+    return;
+  }
+
+  const meetingSlug = `friendzone-event-${eventItem.id}-${String(eventItem.title || 'room')
+    .toLowerCase()
+    .replaceAll(' ', '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .slice(0, 40)}`;
+
+  const payload = {
+    event_id: eventItem.id,
+    name: `${eventItem.title} Online Odası`,
+    description: `${eventItem.title} etkinliği için online buluşma ve sohbet odası.`,
+    room_type: 'event',
+    visibility: 'community',
+    max_participants: eventItem.capacity || 50,
+    meeting_provider: 'jitsi',
+    meeting_url: `https://meet.jit.si/${meetingSlug}`
+  };
+
+  const response = await authFetch(`${API_BASE}/api/rooms/create`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Etkinlik odası oluşturulamadı.', 'error');
+    return;
+  }
+
+  eventRoomsCache[eventItem.id] = response.data;
+
+  showToast('Etkinlik odası oluşturuldu.', 'success');
+
+  window.location.href = `rooms.html?community_id=${eventItem.community_id}`;
+}
+
 async function loadMessages() {
   const container = document.getElementById('chatMessages');
 
@@ -391,6 +459,196 @@ async function loadCommunityEvents() {
   if (count) count.textContent = `${communityEventsCache.length} etkinlik`;
 
   renderCommunityEvents();
+}
+
+async function loadCommunityRooms() {
+  const container = document.getElementById('communityRoomsList');
+  const viewAllLink = document.getElementById('viewCommunityRoomsLink');
+
+  if (!container) return;
+
+  if (viewAllLink) {
+    viewAllLink.href = `rooms.html?community_id=${activeCommunityId}`;
+  }
+
+  container.innerHTML = `
+    <div class="empty-state-mini">
+      Topluluk odaları yükleniyor...
+    </div>
+  `;
+
+  const response = await authFetch(`${API_BASE}/api/rooms/community/${activeCommunityId}`);
+
+  if (!response || !response.success) {
+    communityRoomsCache = [];
+
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        ${response?.message || 'Topluluk odaları yüklenemedi.'}
+      </div>
+    `;
+    return;
+  }
+
+  communityRoomsCache = response.data || [];
+  renderCommunityRooms();
+}
+
+function renderCommunityRooms() {
+  const container = document.getElementById('communityRoomsList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!communityRoomsCache.length) {
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        Bu toplulukta henüz sosyal oda yok.
+        <a href="rooms.html?community_id=${activeCommunityId}" class="inline-room-link">
+          İlk odayı oluştur
+        </a>
+      </div>
+    `;
+    return;
+  }
+
+  communityRoomsCache.slice(0, 3).forEach((room) => {
+    const card = document.createElement('article');
+    card.className = room.is_live ? 'community-room-mini-card live' : 'community-room-mini-card';
+
+    const top = document.createElement('div');
+    top.className = 'community-room-mini-top';
+
+    const icon = document.createElement('div');
+    icon.className = `community-room-mini-icon type-${room.room_type || 'casual'}`;
+    icon.textContent = getRoomTypeIcon(room.room_type);
+
+    const info = document.createElement('div');
+    info.className = 'community-room-mini-info';
+
+    const title = document.createElement('strong');
+    title.textContent = room.name || 'Sosyal Oda';
+
+    const meta = document.createElement('span');
+    meta.textContent = `${getRoomTypeLabel(room.room_type)} · ${room.current_participants || 0}/${room.max_participants || 0}`;
+
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    const live = document.createElement('span');
+    live.className = room.is_live ? 'mini-live-pill active' : 'mini-live-pill';
+    live.textContent = room.is_live ? 'Canlı' : 'Pasif';
+
+    top.appendChild(icon);
+    top.appendChild(info);
+    top.appendChild(live);
+
+    const actions = document.createElement('div');
+    actions.className = 'community-room-mini-actions';
+
+    const joinBtn = document.createElement('button');
+    joinBtn.type = 'button';
+    joinBtn.textContent = room.viewer_status === 'joined' ? 'Ayrıl' : 'Katıl';
+    joinBtn.className = room.viewer_status === 'joined'
+      ? 'mini-room-button danger'
+      : 'mini-room-button primary';
+
+    joinBtn.addEventListener('click', async () => {
+      if (room.viewer_status === 'joined') {
+        await leaveCommunityRoom(room.id);
+      } else {
+        await joinCommunityRoom(room.id);
+      }
+    });
+
+    actions.appendChild(joinBtn);
+
+    if (room.meeting_url) {
+      const meetingLink = document.createElement('a');
+      meetingLink.href = room.meeting_url;
+      meetingLink.target = '_blank';
+      meetingLink.rel = 'noopener noreferrer';
+      meetingLink.className = 'mini-room-button secondary';
+      meetingLink.textContent = getMeetingButtonText(room.meeting_provider);
+
+      actions.appendChild(meetingLink);
+    }
+
+    card.appendChild(top);
+    card.appendChild(actions);
+
+    container.appendChild(card);
+  });
+}
+
+async function joinCommunityRoom(roomId) {
+  const response = await authFetch(`${API_BASE}/api/rooms/${roomId}/join`, {
+    method: 'POST'
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Odaya katılamadınız.', 'error');
+    return;
+  }
+
+  showToast('Odaya katıldınız.', 'success');
+  await loadCommunityRooms();
+}
+
+async function leaveCommunityRoom(roomId) {
+  const response = await authFetch(`${API_BASE}/api/rooms/${roomId}/leave`, {
+    method: 'POST'
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Odadan ayrılamadınız.', 'error');
+    return;
+  }
+
+  showToast('Odadan ayrıldınız.', 'success');
+  await loadCommunityRooms();
+}
+
+function getRoomTypeIcon(type) {
+  const map = {
+    casual: '💬',
+    language: '🗣️',
+    gaming: '🎮',
+    study: '📚',
+    event: '📅',
+    voice: '🎙️',
+    meet: '🔗'
+  };
+
+  return map[type] || '💬';
+}
+
+function getRoomTypeLabel(type) {
+  const map = {
+    casual: 'Sohbet',
+    language: 'Dil Pratiği',
+    gaming: 'Oyun',
+    study: 'Ders Çalışma',
+    event: 'Etkinlik',
+    voice: 'Sesli',
+    meet: 'Meet'
+  };
+
+  return map[type] || 'Sohbet';
+}
+
+function getMeetingButtonText(provider) {
+  const map = {
+    internal: 'Platform İçi',
+    jitsi: 'Jitsi',
+    google_meet: 'Meet',
+    zoom: 'Zoom',
+    livekit: 'LiveKit',
+    external: 'Link'
+  };
+
+  return map[provider] || 'Katıl';
 }
 
 function renderCommunityEvents() {
@@ -492,6 +750,27 @@ function renderCommunityEvents() {
 
     const actions = document.createElement('div');
     actions.className = 'community-event-actions';
+
+    const roomBtn = document.createElement('button');
+roomBtn.type = 'button';
+roomBtn.textContent = 'Online Oda';
+roomBtn.addEventListener('click', async () => {
+  const existingRoom = await loadEventRoom(eventItem.id);
+
+  if (existingRoom) {
+    window.location.href = `rooms.html?community_id=${eventItem.community_id}`;
+    return;
+  }
+
+  if (!eventItem.can_manage_event) {
+    showToast('Bu etkinlik için henüz online oda oluşturulmamış.', 'info');
+    return;
+  }
+
+  await createRoomForEvent(eventItem);
+});
+
+actions.appendChild(roomBtn);
 
     const goingBtn = document.createElement('button');
     goingBtn.type = 'button';
