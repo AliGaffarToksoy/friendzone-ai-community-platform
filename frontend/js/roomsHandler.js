@@ -24,6 +24,7 @@ function bindRoomEvents() {
   const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
   const roomTypeFilter = document.getElementById('roomTypeFilter');
   const communityFilterInput = document.getElementById('communityFilterInput');
+  const eventFilterInput = document.getElementById('eventFilterInput');
 
   document.querySelectorAll('.room-filter').forEach((button) => {
     button.addEventListener('click', async () => {
@@ -81,23 +82,33 @@ function bindRoomEvents() {
   communityFilterInput.addEventListener('change', loadRooms);
 }
 
+  if (eventFilterInput) {
+  eventFilterInput.addEventListener('change', loadRooms);
+}
+
 }
 
 function prefillRoomCommunityFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const communityId = params.get('community_id');
+  const eventId = params.get('event_id');
 
-  if (!communityId) return;
+  const createCommunityInput = document.getElementById('roomCommunityId');
+  const filterCommunityInput = document.getElementById('communityFilterInput');
+  const eventFilterInput = document.getElementById('eventFilterInput');
 
-  const createInput = document.getElementById('roomCommunityId');
-  const filterInput = document.getElementById('communityFilterInput');
+  if (communityId) {
+    if (createCommunityInput) {
+      createCommunityInput.value = communityId;
+    }
 
-  if (createInput) {
-    createInput.value = communityId;
+    if (filterCommunityInput) {
+      filterCommunityInput.value = communityId;
+    }
   }
 
-  if (filterInput) {
-    filterInput.value = communityId;
+  if (eventId && eventFilterInput) {
+    eventFilterInput.value = eventId;
   }
 }
 
@@ -105,6 +116,7 @@ async function loadRooms() {
   const container = document.getElementById('roomsList');
   const roomTypeFilter = document.getElementById('roomTypeFilter');
   const communityFilterInput = document.getElementById('communityFilterInput');
+  const eventFilterInput = document.getElementById('eventFilterInput');
 
   if (!container) return;
 
@@ -125,6 +137,10 @@ async function loadRooms() {
   if (communityFilterInput && communityFilterInput.value) {
     params.set('community_id', communityFilterInput.value);
   }
+
+  if (eventFilterInput && eventFilterInput.value) {
+  params.set('event_id', eventFilterInput.value);
+}
 
   const response = await authFetch(`${API_BASE}/api/rooms?${params.toString()}`);
 
