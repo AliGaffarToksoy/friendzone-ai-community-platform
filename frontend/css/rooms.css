@@ -539,14 +539,11 @@
     width: 100%;
   }
 }
-.community-filter-input {
-
+.community-filter-input,
+.event-filter-input {
   min-height: 38px;
-
   width: 130px;
-
   border-radius: 14px;
-
 }
 
 .community-filter-input {
@@ -1144,4 +1141,15 @@
 
 .rooms-content-split {
   margin-right: auto;
+}
+.event-filter-input {
+  min-height: 38px;
+  width: 130px;
+  border-radius: 14px;
+}
+
+@media (max-width: 720px) {
+  .event-filter-input {
+    width: 100%;
+  }
 }
