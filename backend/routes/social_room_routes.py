@@ -70,6 +70,40 @@ def parse_datetime(value: str | None) -> datetime | None:
         return None
 
 
+def clean_optional_string(value) -> str | None:
+    """
+    Convert optional request values to clean string or None.
+
+    Handles None, empty string, 'none', 'null', and 'undefined' safely.
+    """
+
+    if value is None:
+        return None
+
+    text = str(value).strip()
+
+    if not text:
+        return None
+
+    if text.lower() in {"none", "null", "undefined"}:
+        return None
+
+    return text
+
+
+def parse_optional_int(value, default: int, minimum: int, maximum: int) -> int:
+    """
+    Parse integer safely and clamp it between minimum and maximum.
+    """
+
+    try:
+        parsed = int(value)
+    except Exception:
+        parsed = default
+
+    return max(minimum, min(maximum, parsed))
+
+
 def get_user_membership(user_id: int, community_id: int) -> CommunityMember | None:
     """
     Return active community membership.
@@ -239,10 +273,16 @@ def list_rooms() -> tuple:
         query = query.filter(SocialRoom.room_type == room_type)
 
     if community_id:
-        query = query.filter(SocialRoom.community_id == int(community_id))
+        try:
+            query = query.filter(SocialRoom.community_id == int(community_id))
+        except Exception:
+            return error_response("Geçerli bir topluluk ID girilmelidir.")
 
     if event_id:
-        query = query.filter(SocialRoom.event_id == int(event_id))
+        try:
+            query = query.filter(SocialRoom.event_id == int(event_id))
+        except Exception:
+            return error_response("Geçerli bir etkinlik ID girilmelidir.")
 
     if live is not None:
         is_live = str(live).lower() in {"true", "1", "yes"}
@@ -373,10 +413,11 @@ def create_room() -> tuple:
     event_id = data.get("event_id")
 
     max_participants = data.get("max_participants", 20)
-    meeting_provider = str(data.get("meeting_provider", "")).strip() or None
-    meeting_url = str(data.get("meeting_url", "")).strip() or None
-    language = str(data.get("language", "")).strip() or None
-    game_title = str(data.get("game_title", "")).strip() or None
+
+    meeting_provider = clean_optional_string(data.get("meeting_provider"))
+    meeting_url = clean_optional_string(data.get("meeting_url"))
+    language = clean_optional_string(data.get("language"))
+    game_title = clean_optional_string(data.get("game_title"))
 
     scheduled_start = parse_datetime(data.get("scheduled_start"))
     scheduled_end = parse_datetime(data.get("scheduled_end"))
@@ -399,17 +440,29 @@ def create_room() -> tuple:
     if meeting_provider and meeting_provider not in VALID_MEETING_PROVIDERS:
         return error_response("Geçersiz toplantı sağlayıcısı.")
 
-    try:
-        max_participants = int(max_participants)
-    except Exception:
-        max_participants = 20
+    if room_type == "language" and not language:
+        return error_response("Dil pratiği odası için dil bilgisi zorunludur.")
 
-    max_participants = max(2, min(500, max_participants))
+    if room_type == "gaming" and not game_title:
+        return error_response("Oyun odası için oyun adı zorunludur.")
 
-    community = None
+    if room_type in {"event", "voice", "meet"} and not meeting_url:
+        return error_response("Bu oda tipi için toplantı linki zorunludur.")
+
+    max_participants = parse_optional_int(
+        max_participants,
+        default=20,
+        minimum=2,
+        maximum=500,
+    )
 
     if community_id:
-        community = Community.query.get(int(community_id))
+        try:
+            community_id = int(community_id)
+        except Exception:
+            return error_response("Geçerli bir topluluk ID girilmelidir.")
+
+        community = Community.query.get(community_id)
 
         if not community or not community.is_active:
             return error_response("Topluluk bulunamadı.", status_code=404)
@@ -419,10 +472,13 @@ def create_room() -> tuple:
 
         visibility = "community"
 
-    event = None
-
     if event_id:
-        event = Event.query.get(int(event_id))
+        try:
+            event_id = int(event_id)
+        except Exception:
+            return error_response("Geçerli bir etkinlik ID girilmelidir.")
+
+        event = Event.query.get(event_id)
 
         if not event or not event.is_active:
             return error_response("Etkinlik bulunamadı.", status_code=404)
@@ -434,9 +490,15 @@ def create_room() -> tuple:
         room_type = "event"
         visibility = "community"
 
+        if not meeting_provider:
+            meeting_provider = "jitsi"
+
+        if not meeting_url:
+            meeting_url = f"https://meet.jit.si/friendzone-event-{event.id}"
+
     room = SocialRoom(
-        community_id=int(community_id) if community_id else None,
-        event_id=int(event_id) if event_id else None,
+        community_id=community_id,
+        event_id=event_id,
         created_by=user_id,
         name=name,
         description=description or None,
@@ -622,10 +684,12 @@ def update_room(room_id: int) -> tuple:
     room_type = str(data.get("room_type", room.room_type)).strip()
     visibility = str(data.get("visibility", room.visibility)).strip()
     max_participants = data.get("max_participants", room.max_participants)
-    meeting_provider = str(data.get("meeting_provider", room.meeting_provider or "")).strip() or None
-    meeting_url = str(data.get("meeting_url", room.meeting_url or "")).strip() or None
-    language = str(data.get("language", room.language or "")).strip() or None
-    game_title = str(data.get("game_title", room.game_title or "")).strip() or None
+
+    meeting_provider = clean_optional_string(data.get("meeting_provider", room.meeting_provider))
+    meeting_url = clean_optional_string(data.get("meeting_url", room.meeting_url))
+    language = clean_optional_string(data.get("language", room.language))
+    game_title = clean_optional_string(data.get("game_title", room.game_title))
+
     scheduled_start = parse_datetime(data.get("scheduled_start")) or room.scheduled_start
     scheduled_end = parse_datetime(data.get("scheduled_end")) or room.scheduled_end
     is_featured = bool(data.get("is_featured", room.is_featured))
@@ -633,18 +697,36 @@ def update_room(room_id: int) -> tuple:
     if not name or len(name) < 3:
         return error_response("Oda adı en az 3 karakter olmalıdır.")
 
+    if len(name) > 160:
+        return error_response("Oda adı en fazla 160 karakter olabilir.")
+
+    if description and len(description) > 1500:
+        return error_response("Oda açıklaması en fazla 1500 karakter olabilir.")
+
     if room_type not in VALID_ROOM_TYPES:
         return error_response("Geçersiz oda tipi.")
 
     if visibility not in VALID_ROOM_VISIBILITY:
         return error_response("Geçersiz görünürlük tipi.")
 
-    try:
-        max_participants = int(max_participants)
-    except Exception:
-        max_participants = room.max_participants
+    if meeting_provider and meeting_provider not in VALID_MEETING_PROVIDERS:
+        return error_response("Geçersiz toplantı sağlayıcısı.")
 
-    max_participants = max(2, min(500, max_participants))
+    if room_type == "language" and not language:
+        return error_response("Dil pratiği odası için dil bilgisi zorunludur.")
+
+    if room_type == "gaming" and not game_title:
+        return error_response("Oyun odası için oyun adı zorunludur.")
+
+    if room_type in {"event", "voice", "meet"} and not meeting_url:
+        return error_response("Bu oda tipi için toplantı linki zorunludur.")
+
+    max_participants = parse_optional_int(
+        max_participants,
+        default=room.max_participants,
+        minimum=2,
+        maximum=500,
+    )
 
     room.name = name
     room.description = description or None
@@ -685,7 +767,10 @@ def delete_room(room_id: int) -> tuple:
     room.is_active = False
     room.is_live = False
 
-    SocialRoomParticipant.query.filter_by(room_id=room.id, status="joined").update({
+    SocialRoomParticipant.query.filter_by(
+        room_id=room.id,
+        status="joined",
+    ).update({
         "status": "left",
         "left_at": datetime.utcnow(),
         "last_seen_at": datetime.utcnow(),

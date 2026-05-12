@@ -215,7 +215,7 @@
           </div>
         </div>
 
-        <div class="form-grid">
+        <div id="meetingFields" class="form-grid smart-room-fields">
           <div class="form-group">
             <label for="roomMeetingProvider">Toplantı sağlayıcısı</label>
             <select id="roomMeetingProvider">
@@ -236,12 +236,12 @@
         </div>
 
         <div class="form-grid">
-          <div class="form-group">
+            <div id="languageField" class="form-group smart-room-fields">
             <label for="roomLanguage">Dil</label>
             <input id="roomLanguage" type="text" placeholder="Örn: English, German">
           </div>
 
-          <div class="form-group">
+        <div id="gameField" class="form-group smart-room-fields">
             <label for="roomGameTitle">Oyun adı</label>
             <input id="roomGameTitle" type="text" placeholder="Örn: Valorant, CS2, PUBG">
           </div>
@@ -253,7 +253,26 @@
       </form>
     </div>
   </div>
+<div id="roomParticipantsModal" class="room-modal-overlay hidden">
+  <div class="room-participants-modal-card">
+    <div class="room-modal-header">
+      <div>
+        <p class="rooms-eyebrow">Room Participants</p>
+        <h2 id="roomParticipantsModalTitle">Katılımcılar</h2>
+      </div>
 
+      <button id="closeRoomParticipantsBtn" class="icon-button" type="button">
+        ✕
+      </button>
+    </div>
+
+    <div id="roomParticipantsList" class="room-participants-list">
+      <div class="rooms-empty-state">
+        Katılımcılar yükleniyor...
+      </div>
+    </div>
+  </div>
+</div>
   <div id="toast" class="toast hidden"></div>
 
   <script src="js/main.js"></script>

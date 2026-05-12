@@ -754,23 +754,37 @@ function renderCommunityEvents() {
     const roomBtn = document.createElement('button');
 roomBtn.type = 'button';
 roomBtn.textContent = 'Online Oda';
+
 roomBtn.addEventListener('click', async () => {
-  const existingRoom = await loadEventRoom(eventItem.id);
+  const existingRoom = await loadEventRoom(event.id);
 
   if (existingRoom) {
-    window.location.href = `rooms.html?community_id=${eventItem.community_id}`;
+    window.location.href = `rooms.html?community_id=${event.community_id}&event_id=${event.id}`;
     return;
   }
 
-  if (!eventItem.can_manage_event) {
+  if (!event.can_manage_event) {
     showToast('Bu etkinlik için henüz online oda oluşturulmamış.', 'info');
     return;
   }
 
-  await createRoomForEvent(eventItem);
+  await createRoomForEvent(event);
 });
 
 actions.appendChild(roomBtn);
+
+const goingBtn = document.createElement('button');
+goingBtn.type = 'button';
+goingBtn.textContent = event.user_status === 'going' ? 'Katıldın' : 'Katılıyorum';
+goingBtn.addEventListener('click', () => updateCommunityEventStatus(event.id, 'going'));
+
+const detailBtn = document.createElement('button');
+detailBtn.type = 'button';
+detailBtn.textContent = 'Detay';
+detailBtn.addEventListener('click', () => openEventDetail(event.id));
+
+actions.appendChild(goingBtn);
+actions.appendChild(detailBtn);
 
     const goingBtn = document.createElement('button');
     goingBtn.type = 'button';
