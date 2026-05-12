@@ -20,18 +20,27 @@ async function authFetch(url, options = {}) {
   const token = localStorage.getItem('token');
 
   const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
+  const isFormData = options.body instanceof FormData;
+  const skipJsonContentType = options.skipJsonContentType === true;
+
+  if (!isFormData && !skipJsonContentType && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
+  const fetchOptions = {
+    ...options,
+    headers,
+    mode: 'cors',
+  };
+
+  delete fetchOptions.skipJsonContentType;
+
   try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      mode: 'cors',
-    });
+    const response = await fetch(url, fetchOptions);
 
     const data = await response.json().catch(() => null);
 

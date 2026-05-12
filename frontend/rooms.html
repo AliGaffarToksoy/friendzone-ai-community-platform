@@ -94,6 +94,50 @@
         </button>
       </section>
 
+      <section class="room-category-strip">
+        <button class="room-category-card active" type="button" data-room-type="">
+          <span class="room-category-icon">✨</span>
+          <strong>Tüm Odalar</strong>
+          <small>Aktif sosyal alanlar</small>
+        </button>
+
+        <button class="room-category-card" type="button" data-room-type="voice">
+          <span class="room-category-icon">🎙️</span>
+          <strong>Sesli Odalar</strong>
+          <small>Canlı muhabbet</small>
+        </button>
+
+        <button class="room-category-card" type="button" data-room-type="language">
+          <span class="room-category-icon">🗣️</span>
+          <strong>Dil Pratiği</strong>
+          <small>Konuşarak geliş</small>
+        </button>
+
+        <button class="room-category-card" type="button" data-room-type="gaming">
+          <span class="room-category-icon">🎮</span>
+          <strong>Oyun Odaları</strong>
+          <small>Takımını bul</small>
+        </button>
+
+        <button class="room-category-card" type="button" data-room-type="study">
+          <span class="room-category-icon">📚</span>
+          <strong>Çalışma</strong>
+          <small>Odaklan ve üret</small>
+        </button>
+
+        <button class="room-category-card" type="button" data-room-type="event">
+          <span class="room-category-icon">📅</span>
+          <strong>Etkinlik</strong>
+          <small>Online buluşmalar</small>
+        </button>
+
+        <button class="room-category-card" type="button" data-room-type="meet">
+          <span class="room-category-icon">🔗</span>
+          <strong>Meet</strong>
+          <small>Toplantı linkli</small>
+        </button>
+      </section>
+
       <section class="rooms-toolbar">
         <div class="rooms-filter-group">
           <button class="room-filter active" type="button" data-scope="all">
@@ -113,54 +157,55 @@
           </button>
         </div>
 
-<div class="rooms-select-group">
-  <input
-    id="communityFilterInput"
-    type="number"
-    placeholder="Topluluk ID"
-    class="community-filter-input"
-  />
+        <div class="rooms-select-group">
+          <input
+            id="communityFilterInput"
+            type="number"
+            placeholder="Topluluk ID"
+            class="community-filter-input"
+          />
 
-   <input
-     id="eventFilterInput"
-     type="number"
-     placeholder="Etkinlik ID"
-     class="event-filter-input"
- />
+          <input
+            id="eventFilterInput"
+            type="number"
+            placeholder="Etkinlik ID"
+            class="event-filter-input"
+          />
 
-  <select id="roomTypeFilter">
-    <option value="">Tüm Türler</option>
-    <option value="casual">Sohbet</option>
-    <option value="language">Dil Pratiği</option>
-    <option value="gaming">Oyun</option>
-    <option value="study">Ders Çalışma</option>
-    <option value="event">Etkinlik</option>
-    <option value="voice">Sesli</option>
-    <option value="meet">Meet</option>
-  </select>
+          <select id="roomTypeFilter">
+            <option value="">Tüm Türler</option>
+            <option value="casual">Sohbet</option>
+            <option value="language">Dil Pratiği</option>
+            <option value="gaming">Oyun</option>
+            <option value="study">Ders Çalışma</option>
+            <option value="event">Etkinlik</option>
+            <option value="voice">Sesli</option>
+            <option value="meet">Meet</option>
+          </select>
 
-  <button id="refreshRoomsBtn" class="secondary-action" type="button">
-    Yenile
-  </button>
-</div>
+          <button id="refreshRoomsBtn" class="secondary-action" type="button">
+            Yenile
+          </button>
+        </div>
+      </section>
 
-<section class="rooms-content rooms-content-split">
-  <div id="roomsList" class="rooms-list">
-    <div class="rooms-empty-state">
-      Sosyal odalar yükleniyor...
-    </div>
-  </div>
+      <section class="rooms-content rooms-content-split">
+        <div id="roomsList" class="rooms-list">
+          <div class="rooms-empty-state">
+            Sosyal odalar yükleniyor...
+          </div>
+        </div>
 
-  <aside id="roomDetailPanel" class="room-detail-panel">
-    <div class="room-detail-empty">
-      <div class="room-detail-empty-icon">🎙️</div>
-      <strong>Bir oda seç</strong>
-      <p>
-        Oda kartlarından birine tıklayarak detayları, katılım durumunu ve toplantı linkini burada görüntüleyebilirsin.
-      </p>
-    </div>
-  </aside>
-</section>
+        <aside id="roomDetailPanel" class="room-detail-panel">
+          <div class="room-detail-empty">
+            <div class="room-detail-empty-icon">🎙️</div>
+            <strong>Bir oda seç</strong>
+            <p>
+              Oda kartlarından birine tıklayarak detayları, katılım durumunu ve toplantı linkini burada görüntüleyebilirsin.
+            </p>
+          </div>
+        </aside>
+      </section>
     </main>
   </div>
 
@@ -181,7 +226,12 @@
         <div class="form-grid">
           <div class="form-group">
             <label for="roomName">Oda adı</label>
-            <input id="roomName" type="text" placeholder="Örn: İngilizce Pratik Odası" required>
+            <input
+              id="roomName"
+              type="text"
+              placeholder="Örn: İngilizce Pratik Odası"
+              required
+            >
           </div>
 
           <div class="form-group">
@@ -200,18 +250,31 @@
 
         <div class="form-group">
           <label for="roomDescription">Açıklama</label>
-          <textarea id="roomDescription" placeholder="Bu odada ne yapılacak?"></textarea>
+          <textarea
+            id="roomDescription"
+            placeholder="Bu odada ne yapılacak?"
+          ></textarea>
         </div>
 
         <div class="form-grid">
           <div class="form-group">
             <label for="roomCommunityId">Topluluk ID</label>
-            <input id="roomCommunityId" type="number" placeholder="Örn: 38">
+            <input
+              id="roomCommunityId"
+              type="number"
+              placeholder="Örn: 38"
+            >
           </div>
 
           <div class="form-group">
             <label for="roomMaxParticipants">Maksimum katılımcı</label>
-            <input id="roomMaxParticipants" type="number" value="20" min="2" max="500">
+            <input
+              id="roomMaxParticipants"
+              type="number"
+              value="20"
+              min="2"
+              max="500"
+            >
           </div>
         </div>
 
@@ -231,19 +294,31 @@
 
           <div class="form-group">
             <label for="roomMeetingUrl">Toplantı linki</label>
-            <input id="roomMeetingUrl" type="url" placeholder="https://meet.jit.si/...">
+            <input
+              id="roomMeetingUrl"
+              type="url"
+              placeholder="https://meet.jit.si/..."
+            >
           </div>
         </div>
 
         <div class="form-grid">
-            <div id="languageField" class="form-group smart-room-fields">
+          <div id="languageField" class="form-group smart-room-fields">
             <label for="roomLanguage">Dil</label>
-            <input id="roomLanguage" type="text" placeholder="Örn: English, German">
+            <input
+              id="roomLanguage"
+              type="text"
+              placeholder="Örn: English, German"
+            >
           </div>
 
-        <div id="gameField" class="form-group smart-room-fields">
+          <div id="gameField" class="form-group smart-room-fields">
             <label for="roomGameTitle">Oyun adı</label>
-            <input id="roomGameTitle" type="text" placeholder="Örn: Valorant, CS2, PUBG">
+            <input
+              id="roomGameTitle"
+              type="text"
+              placeholder="Örn: Valorant, CS2, PUBG"
+            >
           </div>
         </div>
 
@@ -253,26 +328,28 @@
       </form>
     </div>
   </div>
-<div id="roomParticipantsModal" class="room-modal-overlay hidden">
-  <div class="room-participants-modal-card">
-    <div class="room-modal-header">
-      <div>
-        <p class="rooms-eyebrow">Room Participants</p>
-        <h2 id="roomParticipantsModalTitle">Katılımcılar</h2>
+
+  <div id="roomParticipantsModal" class="room-modal-overlay hidden">
+    <div class="room-participants-modal-card">
+      <div class="room-modal-header">
+        <div>
+          <p class="rooms-eyebrow">Room Participants</p>
+          <h2 id="roomParticipantsModalTitle">Katılımcılar</h2>
+        </div>
+
+        <button id="closeRoomParticipantsBtn" class="icon-button" type="button">
+          ✕
+        </button>
       </div>
 
-      <button id="closeRoomParticipantsBtn" class="icon-button" type="button">
-        ✕
-      </button>
-    </div>
-
-    <div id="roomParticipantsList" class="room-participants-list">
-      <div class="rooms-empty-state">
-        Katılımcılar yükleniyor...
+      <div id="roomParticipantsList" class="room-participants-list">
+        <div class="rooms-empty-state">
+          Katılımcılar yükleniyor...
+        </div>
       </div>
     </div>
   </div>
-</div>
+
   <div id="toast" class="toast hidden"></div>
 
   <script src="js/main.js"></script>

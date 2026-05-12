@@ -9,7 +9,9 @@ let communityMembersCache = [];
 let brandsCache = [];
 let eventSponsorsCache = {};
 let communityRoomsCache = [];
+let communitySponsorsCache = [];
 let eventRoomsCache = {};
+let eventDetailSponsorsCache = {};
 
 let communityMembersPermission = {
   can_manage_members: false,
@@ -43,7 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadMessages(),
     loadCommunityEvents(),
     loadCommunityMembers(),
-    loadCommunityRooms()
+    loadCommunityRooms(),
+    loadCommunitySponsors()
   ]);
 
   initSocket();
@@ -677,7 +680,7 @@ function renderCommunityEvents() {
     if (event.poster_image_url) {
       const img = document.createElement('img');
       img.src = `${API_BASE}${event.poster_image_url}`;
-      img.alt = event.title;
+      img.alt = event.title || 'Etkinlik posteri';
       poster.appendChild(img);
     } else {
       const fallback = document.createElement('div');
@@ -704,7 +707,7 @@ function renderCommunityEvents() {
     top.appendChild(date);
 
     const title = document.createElement('strong');
-    title.textContent = event.title;
+    title.textContent = event.title || 'Etkinlik';
 
     const meta = document.createElement('p');
     meta.textContent = `${event.city || getEventTypeFallbackCity(event.event_type)} · ${event.location || getEventTypeFallbackLocation(event.event_type)}`;
@@ -752,39 +755,25 @@ function renderCommunityEvents() {
     actions.className = 'community-event-actions';
 
     const roomBtn = document.createElement('button');
-roomBtn.type = 'button';
-roomBtn.textContent = 'Online Oda';
+    roomBtn.type = 'button';
+    roomBtn.textContent = 'Online Oda';
+    roomBtn.addEventListener('click', async () => {
+      const existingRoom = await loadEventRoom(event.id);
 
-roomBtn.addEventListener('click', async () => {
-  const existingRoom = await loadEventRoom(event.id);
+      if (existingRoom) {
+        window.location.href = `rooms.html?community_id=${event.community_id}&event_id=${event.id}`;
+        return;
+      }
 
-  if (existingRoom) {
-    window.location.href = `rooms.html?community_id=${event.community_id}&event_id=${event.id}`;
-    return;
-  }
+      if (!event.can_manage_event) {
+        showToast('Bu etkinlik için henüz online oda oluşturulmamış.', 'info');
+        return;
+      }
 
-  if (!event.can_manage_event) {
-    showToast('Bu etkinlik için henüz online oda oluşturulmamış.', 'info');
-    return;
-  }
+      await createRoomForEvent(event);
+    });
 
-  await createRoomForEvent(event);
-});
-
-actions.appendChild(roomBtn);
-
-const goingBtn = document.createElement('button');
-goingBtn.type = 'button';
-goingBtn.textContent = event.user_status === 'going' ? 'Katıldın' : 'Katılıyorum';
-goingBtn.addEventListener('click', () => updateCommunityEventStatus(event.id, 'going'));
-
-const detailBtn = document.createElement('button');
-detailBtn.type = 'button';
-detailBtn.textContent = 'Detay';
-detailBtn.addEventListener('click', () => openEventDetail(event.id));
-
-actions.appendChild(goingBtn);
-actions.appendChild(detailBtn);
+    actions.appendChild(roomBtn);
 
     const goingBtn = document.createElement('button');
     goingBtn.type = 'button';
@@ -839,6 +828,105 @@ actions.appendChild(detailBtn);
 
     card.appendChild(poster);
     card.appendChild(content);
+
+    container.appendChild(card);
+  });
+}
+
+
+async function loadCommunitySponsors() {
+  const container = document.getElementById('communitySponsorsList');
+
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="empty-state-mini">
+      Sponsorlar yükleniyor...
+    </div>
+  `;
+
+  const response = await authFetch(`${API_BASE}/api/brands/communities/${activeCommunityId}/sponsors`);
+
+  if (!response || !response.success) {
+    communitySponsorsCache = [];
+
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        ${response?.message || 'Sponsorlar yüklenemedi.'}
+      </div>
+    `;
+    return;
+  }
+
+  communitySponsorsCache = response.data || [];
+  renderCommunitySponsors();
+}
+
+function renderCommunitySponsors() {
+  const container = document.getElementById('communitySponsorsList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!communitySponsorsCache.length) {
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        Bu topluluk için henüz sponsor eklenmemiş.
+      </div>
+    `;
+    return;
+  }
+
+  communitySponsorsCache.slice(0, 4).forEach((sponsor) => {
+    const brand = sponsor.brand || {};
+
+    const card = document.createElement('article');
+    card.className = sponsor.is_featured
+      ? 'community-sponsor-mini-card featured'
+      : 'community-sponsor-mini-card';
+
+    const logo = document.createElement('div');
+    logo.className = 'community-sponsor-logo';
+
+    if (brand.logo_image_url) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}${brand.logo_image_url}`;
+      img.alt = brand.name || 'Sponsor logosu';
+      logo.appendChild(img);
+    } else {
+      logo.textContent = getInitials(brand.name || 'SP');
+    }
+
+    const info = document.createElement('div');
+    info.className = 'community-sponsor-info';
+
+    const title = document.createElement('strong');
+    title.textContent = sponsor.title || brand.name || 'Sponsor';
+
+    const meta = document.createElement('span');
+    meta.textContent = [
+      brand.name,
+      getSponsorshipTypeLabel(sponsor.sponsorship_type),
+      sponsor.is_featured ? 'Öne çıkan' : null
+    ].filter(Boolean).join(' · ');
+
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    card.appendChild(logo);
+    card.appendChild(info);
+
+    if (brand.website_url) {
+      const website = document.createElement('a');
+      website.href = brand.website_url;
+      website.target = '_blank';
+      website.rel = 'noopener noreferrer';
+      website.className = 'community-sponsor-link';
+      website.textContent = 'Git';
+
+      card.appendChild(website);
+    }
 
     container.appendChild(card);
   });
@@ -1867,16 +1955,18 @@ async function openEventDetail(eventId) {
 
   const event = response.data;
 
-  const sponsorsResponse = await authFetch(`${API_BASE}/api/brands/events/${event.id}/sponsors`);
-  const sponsors = sponsorsResponse && sponsorsResponse.success ? sponsorsResponse.data || [] : [];
-
   const modal = document.getElementById('eventDetailModal');
   const title = document.getElementById('modalEventTitle');
   const content = document.getElementById('modalEventContent');
   const reviewEventId = document.getElementById('reviewEventId');
 
-  if (title) title.textContent = event.title;
-  if (reviewEventId) reviewEventId.value = event.id;
+  if (title) {
+    title.textContent = event.title || 'Etkinlik';
+  }
+
+  if (reviewEventId) {
+    reviewEventId.value = event.id;
+  }
 
   if (content) {
     content.innerHTML = '';
@@ -1887,7 +1977,7 @@ async function openEventDetail(eventId) {
     if (event.poster_image_url) {
       const img = document.createElement('img');
       img.src = `${API_BASE}${event.poster_image_url}`;
-      img.alt = event.title;
+      img.alt = event.title || 'Etkinlik posteri';
       posterWrap.appendChild(img);
     } else {
       const fallback = document.createElement('div');
@@ -1900,7 +1990,7 @@ async function openEventDetail(eventId) {
     detail.className = 'modal-event-detail';
 
     const description = document.createElement('p');
-    description.textContent = event.description;
+    description.textContent = event.description || 'Bu etkinlik için açıklama eklenmemiş.';
 
     const meta = document.createElement('div');
     meta.className = 'event-meta-grid';
@@ -1915,73 +2005,135 @@ async function openEventDetail(eventId) {
     detail.appendChild(description);
     detail.appendChild(meta);
 
-    if (sponsors.length) {
-      const sponsorSection = document.createElement('div');
-      sponsorSection.className = 'modal-sponsors-section';
+    const sponsorSection = document.createElement('section');
+    sponsorSection.className = 'event-detail-sponsors-box';
 
-      const sponsorTitle = document.createElement('strong');
-      sponsorTitle.textContent = 'Etkinlik Sponsorları';
+    sponsorSection.innerHTML = `
+      <div class="event-detail-sponsors-header">
+        <div>
+          <strong>Etkinlik Sponsorları</strong>
+          <span>Bu etkinliği destekleyen markalar</span>
+        </div>
+      </div>
 
-      const sponsorList = document.createElement('div');
-      sponsorList.className = 'modal-sponsors-list';
+      <div id="eventDetailSponsorsList" class="event-detail-sponsors-list">
+        <div class="empty-card-state">Sponsorlar yükleniyor...</div>
+      </div>
+    `;
 
-      sponsors.forEach((sponsor) => {
-        const brand = sponsor.brand;
-
-        if (!brand) return;
-
-        const sponsorCard = document.createElement('div');
-        sponsorCard.className = 'modal-sponsor-card';
-
-        const logo = document.createElement('div');
-        logo.className = 'modal-sponsor-logo';
-
-        if (brand.logo_image_url) {
-          const img = document.createElement('img');
-          img.src = `${API_BASE}${brand.logo_image_url}`;
-          img.alt = brand.name;
-          logo.appendChild(img);
-        } else {
-          logo.textContent = getInitials(brand.name);
-        }
-
-        const info = document.createElement('div');
-
-        const name = document.createElement('strong');
-        name.textContent = brand.name;
-
-        const sponsorMeta = document.createElement('span');
-        sponsorMeta.textContent = sponsor.title || getSponsorshipTypeLabel(sponsor.sponsorship_type);
-
-        const sponsorDescription = document.createElement('p');
-        sponsorDescription.textContent = sponsor.description || brand.description || '';
-
-        info.appendChild(name);
-        info.appendChild(sponsorMeta);
-
-        if (sponsorDescription.textContent) {
-          info.appendChild(sponsorDescription);
-        }
-
-        sponsorCard.appendChild(logo);
-        sponsorCard.appendChild(info);
-
-        sponsorList.appendChild(sponsorCard);
-      });
-
-      sponsorSection.appendChild(sponsorTitle);
-      sponsorSection.appendChild(sponsorList);
-
-      detail.appendChild(sponsorSection);
-    }
+    detail.appendChild(sponsorSection);
 
     content.appendChild(posterWrap);
     content.appendChild(detail);
   }
 
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
 
+  await loadEventSponsorsForDetail(event.id);
   await loadEventReviews(event.id);
+}
+
+
+async function loadEventSponsorsForDetail(eventId) {
+  const container = document.getElementById('eventDetailSponsorsList');
+
+  if (!container || !eventId) return;
+
+  container.innerHTML = `
+    <div class="empty-card-state">Sponsorlar yükleniyor...</div>
+  `;
+
+  const response = await authFetch(`${API_BASE}/api/brands/events/${eventId}/sponsors`);
+
+  if (!response || !response.success) {
+    eventDetailSponsorsCache[eventId] = [];
+
+    container.innerHTML = `
+      <div class="empty-card-state">
+        ${response?.message || 'Sponsorlar yüklenemedi.'}
+      </div>
+    `;
+    return;
+  }
+
+  eventDetailSponsorsCache[eventId] = response.data || [];
+  renderEventDetailSponsors(eventDetailSponsorsCache[eventId]);
+}
+
+function renderEventDetailSponsors(sponsors) {
+  const container = document.getElementById('eventDetailSponsorsList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!sponsors.length) {
+    container.innerHTML = `
+      <div class="empty-card-state">
+        Bu etkinlik için henüz sponsor eklenmemiş.
+      </div>
+    `;
+    return;
+  }
+
+  sponsors.forEach((sponsor) => {
+    const brand = sponsor.brand || {};
+
+    const card = document.createElement('article');
+    card.className = sponsor.is_featured
+      ? 'event-detail-sponsor-card featured'
+      : 'event-detail-sponsor-card';
+
+    const logo = document.createElement('div');
+    logo.className = 'event-detail-sponsor-logo';
+
+    if (brand.logo_image_url) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}${brand.logo_image_url}`;
+      img.alt = brand.name || 'Sponsor logosu';
+      logo.appendChild(img);
+    } else {
+      logo.textContent = getInitials(brand.name || 'SP');
+    }
+
+    const info = document.createElement('div');
+    info.className = 'event-detail-sponsor-info';
+
+    const title = document.createElement('strong');
+    title.textContent = sponsor.title || brand.name || 'Sponsor';
+
+    const meta = document.createElement('span');
+    meta.textContent = [
+      brand.name,
+      getSponsorshipTypeLabel(sponsor.sponsorship_type),
+      sponsor.is_featured ? 'Öne çıkan' : null
+    ].filter(Boolean).join(' · ');
+
+    const description = document.createElement('p');
+    description.textContent = sponsor.description || brand.description || 'Sponsor açıklaması bulunmuyor.';
+
+    info.appendChild(title);
+    info.appendChild(meta);
+    info.appendChild(description);
+
+    card.appendChild(logo);
+    card.appendChild(info);
+
+    if (brand.website_url) {
+      const website = document.createElement('a');
+      website.href = brand.website_url;
+      website.target = '_blank';
+      website.rel = 'noopener noreferrer';
+      website.className = 'event-detail-sponsor-link';
+      website.textContent = 'Website';
+
+      card.appendChild(website);
+    }
+
+    container.appendChild(card);
+  });
 }
 
 async function loadEventReviews(eventId) {

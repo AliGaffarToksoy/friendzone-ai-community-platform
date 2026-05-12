@@ -28,63 +28,47 @@
         </div>
       </div>
 
-<nav class="sidebar-nav">
-<a href="feed.html" class="chat-nav-link">
+      <nav class="sidebar-nav">
+        <a href="feed.html" class="chat-nav-link">
+          <span>🏠</span>
+          Ana Akış
+        </a>
 
-    <span>🏠</span>
+        <a href="communities.html" class="chat-nav-link">
+          <span>←</span>
+          Topluluklara Dön
+        </a>
 
-    Ana Akış
+        <a href="events.html" class="chat-nav-link">
+          <span>📅</span>
+          Etkinlikler
+        </a>
 
-  </a>
+        <a href="rooms.html" class="chat-nav-link">
+          <span>🎙️</span>
+          Sosyal Odalar
+        </a>
 
-  <a href="communities.html" class="chat-nav-link">
+        <a href="brands.html" class="chat-nav-link">
+          <span>🤝</span>
+          Marka Merkezi
+        </a>
 
-    <span>←</span>
+        <a href="social-profile.html" class="chat-nav-link">
+          <span>👤</span>
+          Sosyal Profil
+        </a>
 
-    Topluluklara Dön
+        <a href="profile.html" class="chat-nav-link">
+          <span>⚙️</span>
+          Profil Ayarları
+        </a>
 
-  </a>
-
-  <a href="events.html" class="chat-nav-link">
-
-    <span>📅</span>
-
-    Etkinlikler
-
-  </a>
-
-  <a href="rooms.html" class="chat-nav-link">
-
-    <span>🎙️</span>
-
-    Sosyal Odalar
-
-  </a>
-
-  <a href="social-profile.html" class="chat-nav-link">
-
-    <span>👤</span>
-
-    Sosyal Profil
-
-  </a>
-
-  <a href="profile.html" class="chat-nav-link">
-
-    <span>⚙️</span>
-
-    Profil Ayarları
-
-  </a>
-
-  <a href="certificate-verify.html" class="chat-nav-link">
-
-    <span>🎓</span>
-
-    Sertifika Doğrula
-
-  </a>
-</nav>
+        <a href="certificate-verify.html" class="chat-nav-link">
+          <span>🎓</span>
+          Sertifika Doğrula
+        </a>
+      </nav>
 
       <div class="sidebar-section">
         <div class="section-title">Üye Olduğum Topluluklar</div>
@@ -172,25 +156,6 @@
           </form>
         </section>
 
-          <section class="rooms-card">
-  <div class="rooms-card-header">
-    <div>
-      <strong>Topluluk Odaları</strong>
-      <span>Canlı sohbet, meet ve etkinlik odaları</span>
-    </div>
-
-    <a id="viewCommunityRoomsLink" href="rooms.html" class="mini-primary-link">
-      Tümünü Gör
-    </a>
-  </div>
-
-  <div id="communityRoomsList" class="community-rooms-list">
-    <div class="empty-state-mini">
-      Topluluk odaları yükleniyor...
-    </div>
-  </div>
-</section>
-
         <aside class="chat-right-panel">
           <section class="assistant-card">
             <div class="assistant-card-header">
@@ -211,6 +176,44 @@
             </button>
 
             <div id="assistantSuggestions" class="assistant-suggestions hidden"></div>
+          </section>
+
+          <section class="rooms-card">
+            <div class="rooms-card-header">
+              <div>
+                <strong>Topluluk Odaları</strong>
+                <span>Canlı sohbet, meet ve etkinlik odaları</span>
+              </div>
+
+              <a id="viewCommunityRoomsLink" href="rooms.html" class="mini-primary-link">
+                Tümünü Gör
+              </a>
+            </div>
+
+            <div id="communityRoomsList" class="community-rooms-list">
+              <div class="empty-state-mini">
+                Topluluk odaları yükleniyor...
+              </div>
+            </div>
+          </section>
+
+          <section class="community-sponsors-card">
+            <div class="community-sponsors-header">
+              <div>
+                <strong>Topluluk Sponsorları</strong>
+                <span>Bu topluluğu destekleyen markalar</span>
+              </div>
+
+              <a href="brands.html" class="mini-primary-link">
+                Marka Merkezi
+              </a>
+            </div>
+
+            <div id="communitySponsorsList" class="community-sponsors-list">
+              <div class="empty-state-mini">
+                Sponsorlar yükleniyor...
+              </div>
+            </div>
           </section>
 
           <section class="events-card">
@@ -544,7 +547,7 @@
                 <input
                   id="inlineBrandCategory"
                   type="text"
-                  placeholder="Örn: Dil Eğitimi"
+                  placeholder="Örn: Technology"
                 >
               </div>
             </div>
@@ -583,7 +586,7 @@
               <input
                 id="inlineBrandTargetAudience"
                 type="text"
-                placeholder="Örn: Dil geliştirmek isteyen üniversite öğrencileri"
+                placeholder="Örn: Yazılım, cloud ve teknolojiyle ilgilenen öğrenciler"
               >
             </div>
 
