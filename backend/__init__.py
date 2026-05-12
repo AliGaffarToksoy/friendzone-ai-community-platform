@@ -23,6 +23,7 @@ from .routes.feed_routes import feed_bp
 from .routes.gamification_routes import gamification_bp
 from .routes.certificate_routes import certificate_bp
 from .routes.social_room_routes import social_room_bp
+from .routes.notification_routes import notification_bp
 
 bcrypt = Bcrypt()
 jwt = JWTManager()
@@ -115,6 +116,7 @@ def create_app() -> Flask:
     app.register_blueprint(gamification_bp, url_prefix="/api/gamification")
     app.register_blueprint(certificate_bp, url_prefix="/api/certificates")
     app.register_blueprint(social_room_bp, url_prefix="/api/rooms")
+    app.register_blueprint(notification_bp, url_prefix="/api/notifications")
 
     from .socket_events import register_socketio_events
     register_socketio_events(socketio)
@@ -137,9 +139,6 @@ def create_app() -> Flask:
 
     @app.route("/uploads/brand_logos/<path:filename>", methods=["GET"])
     def uploaded_brand_logo(filename):
-        from pathlib import Path
-        from flask import send_from_directory
-
         upload_root = Path(app.root_path) / "uploads" / "brand_logos"
         upload_root.mkdir(parents=True, exist_ok=True)
 

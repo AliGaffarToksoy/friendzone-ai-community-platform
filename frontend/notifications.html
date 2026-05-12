@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Bildirim Merkezi - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/notifications.css" />
+</head>
+
+<body>
+  <div class="notifications-shell">
+    <aside class="notifications-sidebar">
+      <div class="brand compact">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Notification Center</span>
+        </div>
+      </div>
+
+      <nav class="notifications-nav">
+        <a href="feed.html" class="notifications-nav-link">
+          <span>🏠</span>
+          Ana Akış
+        </a>
+
+        <a href="communities.html" class="notifications-nav-link">
+          <span>🌐</span>
+          Topluluklar
+        </a>
+
+        <a href="events.html" class="notifications-nav-link">
+          <span>📅</span>
+          Etkinlikler
+        </a>
+
+        <a href="rooms.html" class="notifications-nav-link">
+          <span>🎙️</span>
+          Sosyal Odalar
+        </a>
+
+        <a href="brands.html" class="notifications-nav-link">
+          <span>🤝</span>
+          Marka Merkezi
+        </a>
+
+        <a href="notifications.html" class="notifications-nav-link active">
+          <span>🔔</span>
+          Bildirimler
+        </a>
+
+        <a href="social-profile.html" class="notifications-nav-link">
+          <span>👤</span>
+          Sosyal Profil
+        </a>
+
+        <a href="certificate-verify.html" class="notifications-nav-link">
+          <span>🎓</span>
+          Sertifika Doğrula
+        </a>
+      </nav>
+
+      <section class="notifications-sidebar-card">
+        <strong>Akıllı Bildirimler</strong>
+        <p>
+          Rozetler, sertifikalar, etkinlikler, sponsorlar ve sosyal oda hareketleri tek merkezde toplanır.
+        </p>
+      </section>
+
+      <button id="logoutBtn" class="logout-button" type="button">
+        Çıkış Yap
+      </button>
+    </aside>
+
+    <main class="notifications-main">
+      <section class="notifications-hero">
+        <div>
+          <p class="notifications-eyebrow">FriendZone Activity Hub</p>
+          <h1>Bildirim Merkezi</h1>
+          <p>
+            Topluluk, etkinlik, sponsor, rozet, sertifika ve sosyal oda aktivitelerini tek yerden takip et.
+          </p>
+
+          <div class="notifications-hero-pills">
+            <span>🏅 Rozetler</span>
+            <span>🎓 Sertifikalar</span>
+            <span>📅 Etkinlikler</span>
+            <span>🤝 Sponsorlar</span>
+            <span>🎙️ Sosyal Odalar</span>
+          </div>
+        </div>
+
+        <div class="notifications-hero-actions">
+          <button id="refreshNotificationsBtn" class="secondary-action" type="button">
+            Yenile
+          </button>
+
+          <button id="markAllReadBtn" class="primary-action" type="button">
+            Tümünü Okundu Yap
+          </button>
+        </div>
+      </section>
+
+      <section class="notification-stats-grid">
+        <article class="notification-stat-card">
+          <span>Toplam</span>
+          <strong id="totalNotificationsStat">0</strong>
+          <small>Listelenen bildirim</small>
+        </article>
+
+        <article class="notification-stat-card unread">
+          <span>Okunmamış</span>
+          <strong id="unreadNotificationsStat">0</strong>
+          <small>Dikkat bekleyen bildirim</small>
+        </article>
+
+        <article class="notification-stat-card">
+          <span>Okunmuş</span>
+          <strong id="readNotificationsStat">0</strong>
+          <small>Tamamlanan bildirim</small>
+        </article>
+
+        <article class="notification-stat-card">
+          <span>Türler</span>
+          <strong id="notificationTypesStat">0</strong>
+          <small>Farklı bildirim tipi</small>
+        </article>
+      </section>
+
+      <section class="notifications-toolbar">
+        <div class="notification-filter-group">
+          <button class="notification-filter active" type="button" data-filter="all">
+            Tümü
+          </button>
+
+          <button class="notification-filter" type="button" data-filter="unread">
+            Okunmamış
+          </button>
+
+          <button class="notification-filter" type="button" data-filter="read">
+            Okunmuş
+          </button>
+        </div>
+
+        <div class="notification-search-group">
+          <select id="notificationTypeFilter">
+            <option value="">Tüm Tipler</option>
+            <option value="system">Sistem</option>
+            <option value="badge_awarded">Rozet</option>
+            <option value="certificate_awarded">Sertifika</option>
+            <option value="points_added">Puan</option>
+            <option value="community_joined">Topluluk</option>
+            <option value="community_role_updated">Rol</option>
+            <option value="event_created">Etkinlik</option>
+            <option value="event_joined">Katılım</option>
+            <option value="event_review_created">Yorum</option>
+            <option value="sponsor_added">Sponsor</option>
+            <option value="social_room_created">Oda</option>
+            <option value="social_room_joined">Odaya Katılım</option>
+          </select>
+
+          <input
+            id="notificationSearchInput"
+            type="search"
+            placeholder="Bildirim ara..."
+          >
+        </div>
+      </section>
+
+      <section class="notifications-content">
+        <div id="notificationsList" class="notifications-list">
+          <div class="notifications-empty-state">
+            Bildirimler yükleniyor...
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/notificationsHandler.js"></script>
+</body>
+</html>
