@@ -2,6 +2,7 @@ let allCommunitiesCache = [];
 let recommendedCommunitiesCache = [];
 let myCommunitiesCache = [];
 let currentUserProfile = null;
+let communitySponsorsCache = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
@@ -15,10 +16,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindCommunityEvents();
 
   await Promise.all([
-    loadCurrentUserProfile(),
-    loadMyCommunities(),
-    loadRecommendedCommunities(),
-    loadAllCommunities()
+  loadCommunityDetails(),
+  loadMyCommunitiesForChat(),
+  loadMessages(),
+  loadCommunityEvents(),
+  loadCommunityMembers(),
+  loadCommunityRooms(),
+  loadCommunitySponsors()
   ]);
 
   applyFilters();
@@ -65,6 +69,121 @@ function bindCommunityEvents() {
     scopeSelect.addEventListener('change', handleScopeFormChange);
   }
 }
+
+async function loadCommunitySponsors() {
+  const container = document.getElementById('communitySponsorsList');
+
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="empty-state-mini">
+      Sponsorlar yükleniyor...
+    </div>
+  `;
+
+  const response = await authFetch(`${API_BASE}/api/brands/communities/${activeCommunityId}/sponsors`);
+
+  if (!response || !response.success) {
+    communitySponsorsCache = [];
+
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        ${response?.message || 'Sponsorlar yüklenemedi.'}
+      </div>
+    `;
+    return;
+  }
+
+  communitySponsorsCache = response.data || [];
+  renderCommunitySponsors();
+}
+
+function renderCommunitySponsors() {
+  const container = document.getElementById('communitySponsorsList');
+
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!communitySponsorsCache.length) {
+    container.innerHTML = `
+      <div class="empty-state-mini">
+        Bu topluluk için henüz sponsor eklenmemiş.
+      </div>
+    `;
+    return;
+  }
+
+  communitySponsorsCache.slice(0, 4).forEach((sponsor) => {
+    const brand = sponsor.brand || {};
+
+    const card = document.createElement('article');
+    card.className = sponsor.is_featured
+      ? 'community-sponsor-mini-card featured'
+      : 'community-sponsor-mini-card';
+
+    const logo = document.createElement('div');
+    logo.className = 'community-sponsor-logo';
+
+    if (brand.logo_image_url) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}${brand.logo_image_url}`;
+      img.alt = brand.name || 'Sponsor logosu';
+      logo.appendChild(img);
+    } else {
+      logo.textContent = getInitials(brand.name || 'SP');
+    }
+
+    const info = document.createElement('div');
+    info.className = 'community-sponsor-info';
+
+    const title = document.createElement('strong');
+    title.textContent = sponsor.title || brand.name || 'Sponsor';
+
+    const meta = document.createElement('span');
+    meta.textContent = [
+      brand.name,
+      getSponsorshipTypeLabel(sponsor.sponsorship_type),
+      sponsor.is_featured ? 'Öne çıkan' : null
+    ].filter(Boolean).join(' · ');
+
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    card.appendChild(logo);
+    card.appendChild(info);
+
+    if (brand.website_url) {
+      const website = document.createElement('a');
+      website.href = brand.website_url;
+      website.target = '_blank';
+      website.rel = 'noopener noreferrer';
+      website.className = 'community-sponsor-link';
+      website.textContent = 'Git';
+
+      card.appendChild(website);
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function getSponsorshipTypeLabel(type) {
+  const map = {
+    sponsor: 'Sponsor',
+    main_sponsor: 'Ana Sponsor',
+    gold_sponsor: 'Gold Sponsor',
+    silver_sponsor: 'Silver Sponsor',
+    bronze_sponsor: 'Bronze Sponsor',
+    media_sponsor: 'Medya Sponsoru',
+    education_partner: 'Eğitim Partneri',
+    technology_partner: 'Teknoloji Partneri',
+    community_partner: 'Topluluk Partneri'
+  };
+
+  return map[type] || 'Sponsor';
+}
+
 
 async function loadCurrentUserProfile() {
   const userId = localStorage.getItem('user_id');

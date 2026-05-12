@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   bindRoomEvents();
   prefillRoomCommunityFromQuery();
+
   await loadRooms();
 });
 
@@ -21,10 +22,13 @@ function bindRoomEvents() {
   const createRoomModal = document.getElementById('createRoomModal');
   const createRoomForm = document.getElementById('createRoomForm');
   const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
+
   const roomTypeFilter = document.getElementById('roomTypeFilter');
-  const roomTypeSelect = document.getElementById('roomType');
   const communityFilterInput = document.getElementById('communityFilterInput');
   const eventFilterInput = document.getElementById('eventFilterInput');
+
+  const roomTypeSelect = document.getElementById('roomType');
+
   const closeRoomParticipantsBtn = document.getElementById('closeRoomParticipantsBtn');
   const roomParticipantsModal = document.getElementById('roomParticipantsModal');
 
@@ -41,31 +45,33 @@ function bindRoomEvents() {
     });
   });
 
+  document.querySelectorAll('.room-category-card').forEach((button) => {
+    button.addEventListener('click', async () => {
+      document.querySelectorAll('.room-category-card').forEach((item) => {
+        item.classList.remove('active');
+      });
+
+      button.classList.add('active');
+
+      const selectedType = button.dataset.roomType || '';
+
+      if (roomTypeFilter) {
+        roomTypeFilter.value = selectedType;
+      }
+
+      await loadRooms();
+    });
+  });
+
   if (openCreateRoomBtn) {
     openCreateRoomBtn.addEventListener('click', () => {
-    updateSmartRoomFields();
+      updateSmartRoomFields();
 
       if (createRoomModal) {
         createRoomModal.classList.remove('hidden');
       }
     });
   }
-
-  if (closeRoomParticipantsBtn) {
-  closeRoomParticipantsBtn.addEventListener('click', () => {
-    if (roomParticipantsModal) {
-      roomParticipantsModal.classList.add('hidden');
-    }
-  });
-}
-
-if (roomParticipantsModal) {
-  roomParticipantsModal.addEventListener('click', (event) => {
-    if (event.target === roomParticipantsModal) {
-      roomParticipantsModal.classList.add('hidden');
-    }
-  });
-}
 
   if (closeCreateRoomBtn) {
     closeCreateRoomBtn.addEventListener('click', () => {
@@ -95,25 +101,45 @@ if (roomParticipantsModal) {
   }
 
   if (roomTypeFilter) {
-    roomTypeFilter.addEventListener('change', loadRooms);
+    roomTypeFilter.addEventListener('change', async () => {
+      syncCategoryCardsWithType(roomTypeFilter.value);
+      await loadRooms();
+    });
   }
-  if (roomTypeSelect) {
-  roomTypeSelect.addEventListener('change', updateSmartRoomFields);
-  updateSmartRoomFields();
-}
 
   if (communityFilterInput) {
-  communityFilterInput.addEventListener('change', loadRooms);
-}
+    communityFilterInput.addEventListener('change', loadRooms);
+  }
 
   if (eventFilterInput) {
-  eventFilterInput.addEventListener('change', loadRooms);
-}
+    eventFilterInput.addEventListener('change', loadRooms);
+  }
 
+  if (roomTypeSelect) {
+    roomTypeSelect.addEventListener('change', updateSmartRoomFields);
+    updateSmartRoomFields();
+  }
+
+  if (closeRoomParticipantsBtn) {
+    closeRoomParticipantsBtn.addEventListener('click', () => {
+      if (roomParticipantsModal) {
+        roomParticipantsModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (roomParticipantsModal) {
+    roomParticipantsModal.addEventListener('click', (event) => {
+      if (event.target === roomParticipantsModal) {
+        roomParticipantsModal.classList.add('hidden');
+      }
+    });
+  }
 }
 
 function prefillRoomCommunityFromQuery() {
   const params = new URLSearchParams(window.location.search);
+
   const communityId = params.get('community_id');
   const eventId = params.get('event_id');
 
@@ -136,54 +162,9 @@ function prefillRoomCommunityFromQuery() {
   }
 }
 
-function updateSmartRoomFields() {
-  const roomType = getInputValue('roomType') || 'casual';
-
-  const meetingFields = document.getElementById('meetingFields');
-  const languageField = document.getElementById('languageField');
-  const gameField = document.getElementById('gameField');
-
-  const showMeeting = ['event', 'meet', 'voice'].includes(roomType);
-  const showLanguage = roomType === 'language';
-  const showGame = roomType === 'gaming';
-
-  if (meetingFields) {
-    meetingFields.classList.toggle('smart-hidden', !showMeeting);
-  }
-
-  if (languageField) {
-    languageField.classList.toggle('smart-hidden', !showLanguage);
-  }
-
-  if (gameField) {
-    gameField.classList.toggle('smart-hidden', !showGame);
-  }
-
-  const provider = document.getElementById('roomMeetingProvider');
-  const meetingUrl = document.getElementById('roomMeetingUrl');
-
-  if (showMeeting && provider && !provider.value) {
-    provider.value = 'jitsi';
-  }
-
-  if (showMeeting && meetingUrl && !meetingUrl.value) {
-    const randomSlug = `friendzone-room-${Date.now()}`;
-    meetingUrl.value = `https://meet.jit.si/${randomSlug}`;
-  }
-
-  if (!showMeeting && provider) {
-    provider.value = '';
-  }
-
-  if (!showMeeting && meetingUrl) {
-    meetingUrl.value = '';
-  }
-}
-
 async function loadRooms() {
   const container = document.getElementById('roomsList');
   const roomTypeFilter = document.getElementById('roomTypeFilter');
-  const roomTypeSelect = document.getElementById('roomType');
   const communityFilterInput = document.getElementById('communityFilterInput');
   const eventFilterInput = document.getElementById('eventFilterInput');
 
@@ -208,22 +189,26 @@ async function loadRooms() {
   }
 
   if (eventFilterInput && eventFilterInput.value) {
-  params.set('event_id', eventFilterInput.value);
-}
+    params.set('event_id', eventFilterInput.value);
+  }
 
   const response = await authFetch(`${API_BASE}/api/rooms?${params.toString()}`);
 
   if (!response || !response.success) {
     roomsCache = [];
+
     container.innerHTML = `
       <div class="rooms-empty-state error">
         ${response?.message || 'Sosyal odalar yüklenemedi.'}
       </div>
     `;
+
+    renderRoomDetail(null);
     return;
   }
 
   roomsCache = response.data || [];
+
   renderRooms();
 }
 
@@ -235,11 +220,14 @@ function renderRooms() {
   container.innerHTML = '';
 
   if (!roomsCache.length) {
+    selectedRoomId = null;
+
     container.innerHTML = `
       <div class="rooms-empty-state">
         Henüz bu filtreye uygun sosyal oda bulunmuyor. İlk odayı sen oluşturabilirsin.
       </div>
     `;
+
     renderRoomDetail(null);
     return;
   }
@@ -253,6 +241,7 @@ function renderRooms() {
   });
 
   const selectedRoom = roomsCache.find((room) => room.id === selectedRoomId);
+
   renderRoomDetail(selectedRoom || roomsCache[0]);
 }
 
@@ -261,20 +250,20 @@ function createRoomCard(room) {
   card.className = room.is_live ? 'room-card live' : 'room-card';
 
   if (selectedRoomId === room.id) {
-  card.classList.add('selected');
-}
-
-card.addEventListener('click', (event) => {
-  if (
-    event.target.closest('button') ||
-    event.target.closest('a')
-  ) {
-    return;
+    card.classList.add('selected');
   }
 
-  selectedRoomId = room.id;
-  renderRooms();
-});
+  card.addEventListener('click', (event) => {
+    if (
+      event.target.closest('button') ||
+      event.target.closest('a')
+    ) {
+      return;
+    }
+
+    selectedRoomId = room.id;
+    renderRooms();
+  });
 
   const top = document.createElement('div');
   top.className = 'room-card-top';
@@ -313,6 +302,10 @@ card.addEventListener('click', (event) => {
   stats.appendChild(createRoomStat('👥', `${room.current_participants || 0}/${room.max_participants || 0}`));
   stats.appendChild(createRoomStat('🏷️', getRoomTypeLabel(room.room_type)));
   stats.appendChild(createRoomStat('🔒', getVisibilityLabel(room.visibility)));
+
+  const activity = createRoomStat('⏱️', formatRelativeTime(room.last_activity_at));
+  activity.classList.add(getRoomActivityClass(room));
+  stats.appendChild(activity);
 
   if (room.community_name) {
     stats.appendChild(createRoomStat('🌐', room.community_name));
@@ -360,6 +353,7 @@ card.addEventListener('click', (event) => {
     meetingBtn.target = '_blank';
     meetingBtn.rel = 'noopener noreferrer';
     meetingBtn.textContent = getMeetingButtonText(room.meeting_provider);
+
     actions.appendChild(meetingBtn);
   }
 
@@ -450,6 +444,7 @@ function renderRoomDetail(room) {
   metaGrid.appendChild(createRoomDetailMeta('Görünürlük', getVisibilityLabel(room.visibility)));
   metaGrid.appendChild(createRoomDetailMeta('Topluluk', room.community_name || '-'));
   metaGrid.appendChild(createRoomDetailMeta('Oluşturan', room.creator_name || '-'));
+  metaGrid.appendChild(createRoomDetailMeta('Son Aktivite', formatRelativeTime(room.last_activity_at)));
 
   if (room.language) {
     metaGrid.appendChild(createRoomDetailMeta('Dil', room.language));
@@ -461,6 +456,10 @@ function renderRoomDetail(room) {
 
   if (room.meeting_provider) {
     metaGrid.appendChild(createRoomDetailMeta('Sağlayıcı', getMeetingProviderLabel(room.meeting_provider)));
+  }
+
+  if (room.event_title) {
+    metaGrid.appendChild(createRoomDetailMeta('Etkinlik', room.event_title));
   }
 
   const actions = document.createElement('div');
@@ -493,6 +492,7 @@ function renderRoomDetail(room) {
     meetingBtn.target = '_blank';
     meetingBtn.rel = 'noopener noreferrer';
     meetingBtn.textContent = getMeetingButtonText(room.meeting_provider);
+
     actions.appendChild(meetingBtn);
   }
 
@@ -513,6 +513,13 @@ function renderRoomDetail(room) {
   panel.appendChild(actions);
 }
 
+function createRoomStat(icon, value) {
+  const item = document.createElement('span');
+  item.className = 'room-stat';
+  item.textContent = `${icon} ${value}`;
+  return item;
+}
+
 function createRoomDetailMeta(label, value) {
   const item = document.createElement('div');
 
@@ -528,26 +535,6 @@ function createRoomDetailMeta(label, value) {
   return item;
 }
 
-function getMeetingProviderLabel(provider) {
-  const map = {
-    internal: 'Platform İçi',
-    jitsi: 'Jitsi Meet',
-    google_meet: 'Google Meet',
-    zoom: 'Zoom',
-    livekit: 'LiveKit',
-    external: 'Harici Link'
-  };
-
-  return map[provider] || '-';
-}
-
-function createRoomStat(icon, value) {
-  const item = document.createElement('span');
-  item.className = 'room-stat';
-  item.textContent = `${icon} ${value}`;
-  return item;
-}
-
 async function createRoom(event) {
   event.preventDefault();
 
@@ -560,30 +547,31 @@ async function createRoom(event) {
     room_type: getInputValue('roomType') || 'casual',
     community_id: getInputValue('roomCommunityId') || null,
     max_participants: Number(getInputValue('roomMaxParticipants') || 20),
-    meeting_provider: getInputValue('roomMeetingProvider') || null,
-    meeting_url: getInputValue('roomMeetingUrl') || null,
-    language: getInputValue('roomLanguage') || null,
-    game_title: getInputValue('roomGameTitle') || null
+    meeting_provider: getInputValue('roomMeetingProvider') || '',
+    meeting_url: getInputValue('roomMeetingUrl') || '',
+    language: getInputValue('roomLanguage') || '',
+    game_title: getInputValue('roomGameTitle') || ''
   };
 
   if (!payload.name || payload.name.length < 3) {
     showToast('Oda adı en az 3 karakter olmalıdır.', 'error');
     return;
   }
+
   if (payload.room_type === 'language' && !payload.language) {
-  showToast('Dil pratiği odası için dil bilgisi girilmelidir.', 'error');
-  return;
-}
+    showToast('Dil pratiği odası için dil bilgisi girilmelidir.', 'error');
+    return;
+  }
 
-if (payload.room_type === 'gaming' && !payload.game_title) {
-  showToast('Oyun odası için oyun adı girilmelidir.', 'error');
-  return;
-}
+  if (payload.room_type === 'gaming' && !payload.game_title) {
+    showToast('Oyun odası için oyun adı girilmelidir.', 'error');
+    return;
+  }
 
-if (['event', 'meet', 'voice'].includes(payload.room_type) && !payload.meeting_url) {
-  showToast('Bu oda tipi için toplantı linki girilmelidir.', 'error');
-  return;
-}
+  if (['event', 'meet', 'voice'].includes(payload.room_type) && !payload.meeting_url) {
+    showToast('Bu oda tipi için toplantı linki girilmelidir.', 'error');
+    return;
+  }
 
   const originalText = submitBtn ? submitBtn.textContent : 'Odayı Oluştur';
 
@@ -619,6 +607,10 @@ if (['event', 'meet', 'voice'].includes(payload.room_type) && !payload.meeting_u
     form.reset();
   }
 
+  updateSmartRoomFields();
+
+  selectedRoomId = response.data?.id || selectedRoomId;
+
   await loadRooms();
 }
 
@@ -632,7 +624,10 @@ async function joinRoom(roomId) {
     return;
   }
 
+  selectedRoomId = roomId;
+
   showToast('Odaya katıldınız.', 'success');
+
   await loadRooms();
 }
 
@@ -646,7 +641,10 @@ async function leaveRoom(roomId) {
     return;
   }
 
+  selectedRoomId = roomId;
+
   showToast('Odadan ayrıldınız.', 'success');
+
   await loadRooms();
 }
 
@@ -664,7 +662,12 @@ async function deleteRoom(roomId, roomName) {
     return;
   }
 
+  if (selectedRoomId === roomId) {
+    selectedRoomId = null;
+  }
+
   showToast('Oda silindi.', 'success');
+
   await loadRooms();
 }
 
@@ -771,13 +774,55 @@ function renderRoomParticipants(participants) {
   });
 }
 
-function getInitials(name) {
-  return String(name || 'FZ')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('') || 'FZ';
+function updateSmartRoomFields() {
+  const roomType = getInputValue('roomType') || 'casual';
+
+  const meetingFields = document.getElementById('meetingFields');
+  const languageField = document.getElementById('languageField');
+  const gameField = document.getElementById('gameField');
+
+  const showMeeting = ['event', 'meet', 'voice'].includes(roomType);
+  const showLanguage = roomType === 'language';
+  const showGame = roomType === 'gaming';
+
+  if (meetingFields) {
+    meetingFields.classList.toggle('smart-hidden', !showMeeting);
+  }
+
+  if (languageField) {
+    languageField.classList.toggle('smart-hidden', !showLanguage);
+  }
+
+  if (gameField) {
+    gameField.classList.toggle('smart-hidden', !showGame);
+  }
+
+  const provider = document.getElementById('roomMeetingProvider');
+  const meetingUrl = document.getElementById('roomMeetingUrl');
+
+  if (showMeeting && provider && !provider.value) {
+    provider.value = 'jitsi';
+  }
+
+  if (showMeeting && meetingUrl && !meetingUrl.value) {
+    const randomSlug = `friendzone-room-${Date.now()}`;
+    meetingUrl.value = `https://meet.jit.si/${randomSlug}`;
+  }
+
+  if (!showMeeting && provider) {
+    provider.value = '';
+  }
+
+  if (!showMeeting && meetingUrl) {
+    meetingUrl.value = '';
+  }
+}
+
+function syncCategoryCardsWithType(roomType) {
+  document.querySelectorAll('.room-category-card').forEach((button) => {
+    const buttonType = button.dataset.roomType || '';
+    button.classList.toggle('active', buttonType === (roomType || ''));
+  });
 }
 
 function getInputValue(id) {
@@ -836,6 +881,19 @@ function getMeetingButtonText(provider) {
   return map[provider] || 'Toplantıya Katıl';
 }
 
+function getMeetingProviderLabel(provider) {
+  const map = {
+    internal: 'Platform İçi',
+    jitsi: 'Jitsi Meet',
+    google_meet: 'Google Meet',
+    zoom: 'Zoom',
+    livekit: 'LiveKit',
+    external: 'Harici Link'
+  };
+
+  return map[provider] || '-';
+}
+
 function buildRoomMeta(room) {
   const parts = [];
 
@@ -850,4 +908,69 @@ function buildRoomMeta(room) {
   }
 
   return parts.join(' · ');
+}
+
+function formatRelativeTime(value) {
+  if (!value) return 'Aktivite yok';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Aktivite yok';
+  }
+
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) {
+    return 'Az önce aktif';
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} dk önce aktif`;
+  }
+
+  if (diffHours < 24) {
+    return `${diffHours} saat önce aktif`;
+  }
+
+  if (diffDays < 7) {
+    return `${diffDays} gün önce aktif`;
+  }
+
+  return date.toLocaleDateString('tr-TR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+function getRoomActivityClass(room) {
+  if (room.is_live) return 'activity-live';
+
+  if (!room.last_activity_at) return 'activity-stale';
+
+  const date = new Date(room.last_activity_at);
+
+  if (Number.isNaN(date.getTime())) return 'activity-stale';
+
+  const diffHours = (new Date() - date) / (1000 * 60 * 60);
+
+  if (diffHours < 1) return 'activity-recent';
+  if (diffHours < 24) return 'activity-today';
+
+  return 'activity-stale';
+}
+
+function getInitials(name) {
+  return String(name || 'FZ')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'FZ';
 }

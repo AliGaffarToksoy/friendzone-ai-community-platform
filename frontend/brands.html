@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Marka Merkezi - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/brands.css" />
+</head>
+
+<body>
+  <div class="brands-shell">
+    <aside class="brands-sidebar">
+      <div class="brand compact">
+        <div class="brand-logo">FZ</div>
+        <div>
+          <h1>FriendZone</h1>
+          <span>Brand Center</span>
+        </div>
+      </div>
+
+      <nav class="brands-nav">
+        <a href="feed.html" class="brands-nav-link">
+          <span>🏠</span>
+          Ana Akış
+        </a>
+
+        <a href="communities.html" class="brands-nav-link">
+          <span>🌐</span>
+          Topluluklar
+        </a>
+
+        <a href="events.html" class="brands-nav-link">
+          <span>📅</span>
+          Etkinlikler
+        </a>
+
+        <a href="rooms.html" class="brands-nav-link">
+          <span>🎙️</span>
+          Sosyal Odalar
+        </a>
+
+        <a href="brands.html" class="brands-nav-link active">
+          <span>🤝</span>
+          Marka Merkezi
+        </a>
+
+        <a href="social-profile.html" class="brands-nav-link">
+          <span>👤</span>
+          Sosyal Profil
+        </a>
+
+        <a href="certificate-verify.html" class="brands-nav-link">
+          <span>🎓</span>
+          Sertifika Doğrula
+        </a>
+      </nav>
+
+      <section class="brands-sidebar-card">
+        <strong>Partner Ekosistemi</strong>
+        <p>
+          Markalar; topluluklara, etkinliklere ve öğrenci deneyimlerine görünürlük sağlayabilir.
+        </p>
+      </section>
+
+      <button id="logoutBtn" class="logout-button" type="button">
+        Çıkış Yap
+      </button>
+    </aside>
+
+    <main class="brands-main">
+      <section class="brands-hero">
+        <div>
+          <p class="brands-eyebrow">FriendZone Partner Network</p>
+          <h1>Marka Merkezi</h1>
+          <p>
+            Öğrenci toplulukları, etkinlikler, eğitim programları ve sosyal deneyimler için markaları, sponsorları ve partnerleri yönet.
+          </p>
+
+          <div class="brands-hero-pills">
+            <span>🤝 Topluluk sponsorluğu</span>
+            <span>📅 Etkinlik partnerliği</span>
+            <span>🎁 İndirim / kampanya</span>
+            <span>🎓 Eğitim & bootcamp görünürlüğü</span>
+          </div>
+        </div>
+
+        <button id="openCreateBrandBtn" class="primary-action" type="button">
+          Yeni Marka Ekle
+        </button>
+      </section>
+
+      <section class="brand-stats-grid">
+        <article class="brand-stat-card">
+          <span>Toplam Marka</span>
+          <strong id="totalBrandsStat">0</strong>
+          <small>Aktif marka profili</small>
+        </article>
+
+        <article class="brand-stat-card">
+          <span>Doğrulanmış</span>
+          <strong id="verifiedBrandsStat">0</strong>
+          <small>Onaylı marka</small>
+        </article>
+
+        <article class="brand-stat-card">
+          <span>Kampanyalı</span>
+          <strong id="campaignBrandsStat">0</strong>
+          <small>Kampanya veya indirim kodu olan</small>
+        </article>
+
+        <article class="brand-stat-card">
+          <span>Kategoriler</span>
+          <strong id="brandCategoriesStat">0</strong>
+          <small>Farklı marka alanı</small>
+        </article>
+      </section>
+
+      <section class="brands-toolbar">
+        <div class="brand-filter-group">
+          <button class="brand-filter active" type="button" data-category="">
+            Tümü
+          </button>
+
+          <button class="brand-filter" type="button" data-category="Energy & Sports">
+            Enerji & Spor
+          </button>
+
+          <button class="brand-filter" type="button" data-category="Education">
+            Eğitim
+          </button>
+
+          <button class="brand-filter" type="button" data-category="Technology">
+            Teknoloji
+          </button>
+
+          <button class="brand-filter" type="button" data-category="Language">
+            Dil
+          </button>
+
+          <button class="brand-filter" type="button" data-category="Career">
+            Kariyer
+          </button>
+
+          <button class="brand-filter" type="button" data-category="Food & Beverage">
+            Yiyecek & İçecek
+          </button>
+        </div>
+
+        <div class="brand-search-group">
+          <input
+            id="brandSearchInput"
+            type="search"
+            placeholder="Marka ara..."
+          >
+
+          <select id="brandVerifiedFilter">
+            <option value="">Tüm Durumlar</option>
+            <option value="true">Doğrulanmış</option>
+            <option value="false">Doğrulanmamış</option>
+          </select>
+
+          <button id="refreshBrandsBtn" class="secondary-action" type="button">
+            Yenile
+          </button>
+        </div>
+      </section>
+
+        <section class="sponsor-marketplace-card">
+  <div class="sponsor-marketplace-header">
+    <div>
+      <p class="brands-eyebrow">Sponsor Marketplace</p>
+      <h2>Sponsor Bağlantısı Oluştur</h2>
+      <p>
+        Bir markayı doğrudan topluluklara veya etkinliklere sponsor olarak bağla.
+      </p>
+    </div>
+  </div>
+
+  <form id="sponsorLinkForm" class="sponsor-link-form">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="sponsorBrandSelect">Marka</label>
+        <select id="sponsorBrandSelect" required>
+          <option value="">Marka seç</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="sponsorTargetType">Hedef türü</label>
+        <select id="sponsorTargetType" required>
+          <option value="community">Topluluk</option>
+          <option value="event">Etkinlik</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="sponsorTargetId">Topluluk / Etkinlik ID</label>
+        <input
+          id="sponsorTargetId"
+          type="number"
+          placeholder="Örn: 38"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="sponsorshipType">Sponsorluk tipi</label>
+        <select id="sponsorshipType" required>
+          <option value="sponsor">Sponsor</option>
+          <option value="main_sponsor">Ana Sponsor</option>
+          <option value="gold_sponsor">Gold Sponsor</option>
+          <option value="silver_sponsor">Silver Sponsor</option>
+          <option value="bronze_sponsor">Bronze Sponsor</option>
+          <option value="media_sponsor">Medya Sponsoru</option>
+          <option value="education_partner">Eğitim Partneri</option>
+          <option value="technology_partner">Teknoloji Partneri</option>
+          <option value="community_partner">Topluluk Partneri</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="sponsorTitle">Başlık</label>
+        <input
+          id="sponsorTitle"
+          type="text"
+          placeholder="Örn: Ana Etkinlik Sponsoru"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="sponsorDisplayOrder">Sıralama</label>
+        <input
+          id="sponsorDisplayOrder"
+          type="number"
+          value="0"
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="sponsorDescription">Açıklama</label>
+      <textarea
+        id="sponsorDescription"
+        placeholder="Sponsorluğun kapsamını kısa şekilde yaz."
+      ></textarea>
+    </div>
+
+    <label class="sponsor-checkbox">
+      <input id="sponsorFeatured" type="checkbox">
+      <span>Öne çıkan sponsor olarak işaretle</span>
+    </label>
+
+    <div class="sponsor-actions">
+      <button id="createSponsorSubmitBtn" class="primary-action" type="submit">
+        Sponsor Bağlantısı Oluştur
+      </button>
+
+      <button id="loadSponsorsBtn" class="secondary-action" type="button">
+        Sponsorları Listele
+      </button>
+    </div>
+  </form>
+
+  <div id="sponsorsList" class="sponsors-list">
+    <div class="brands-empty-state small">
+      Sponsor kayıtlarını görmek için hedef türü ve ID girip “Sponsorları Listele” butonuna bas.
+    </div>
+  </div>
+</section>
+        
+      <section class="brands-content">
+        <div id="brandsList" class="brands-list">
+          <div class="brands-empty-state">
+            Markalar yükleniyor...
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="createBrandModal" class="brand-modal-overlay hidden">
+    <div class="brand-modal-card">
+      <div class="brand-modal-header">
+        <div>
+          <p class="brands-eyebrow">Create Brand</p>
+          <h2>Yeni Marka Profili</h2>
+        </div>
+
+        <button id="closeCreateBrandBtn" class="icon-button" type="button">
+          ✕
+        </button>
+      </div>
+
+      <form id="createBrandForm" class="create-brand-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="brandName">Marka adı</label>
+            <input
+              id="brandName"
+              type="text"
+              placeholder="Örn: Huawei"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="brandCategory">Kategori</label>
+            <select id="brandCategory" required>
+              <option value="">Kategori seç</option>
+              <option value="Energy & Sports">Energy & Sports</option>
+              <option value="Education">Education</option>
+              <option value="Technology">Technology</option>
+              <option value="Language">Language</option>
+              <option value="Career">Career</option>
+              <option value="Food & Beverage">Food & Beverage</option>
+              <option value="Community">Community</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="brandDescription">Açıklama</label>
+          <textarea
+            id="brandDescription"
+            placeholder="Markanın öğrencilere, topluluklara veya etkinliklere nasıl değer sağlayacağını yaz."
+          ></textarea>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="brandWebsiteUrl">Website</label>
+            <input
+              id="brandWebsiteUrl"
+              type="url"
+              placeholder="https://www.example.com"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="brandContactEmail">İletişim e-postası</label>
+            <input
+              id="brandContactEmail"
+              type="email"
+              placeholder="partner@example.com"
+            >
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="brandCampaignUrl">Kampanya linki</label>
+            <input
+              id="brandCampaignUrl"
+              type="url"
+              placeholder="https://campaign.example.com"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="brandDiscountCode">İndirim kodu</label>
+            <input
+              id="brandDiscountCode"
+              type="text"
+              placeholder="Örn: FRIENDZONE20"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="brandTargetAudience">Hedef kitle</label>
+          <input
+            id="brandTargetAudience"
+            type="text"
+            placeholder="Örn: Üniversite öğrencileri, yazılım kulüpleri, kariyer toplulukları"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="brandLogo">Logo</label>
+          <input
+            id="brandLogo"
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+          >
+          <small class="form-help">
+            PNG, JPG, WEBP veya SVG logo yükleyebilirsin.
+          </small>
+        </div>
+
+        <button id="createBrandSubmitBtn" class="primary-action modal-submit" type="submit">
+          Markayı Oluştur
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="brandDetailModal" class="brand-modal-overlay hidden">
+    <div class="brand-detail-modal-card">
+      <div class="brand-modal-header">
+        <div>
+          <p class="brands-eyebrow">Brand Detail</p>
+          <h2 id="brandDetailTitle">Marka Detayı</h2>
+        </div>
+
+        <button id="closeBrandDetailBtn" class="icon-button" type="button">
+          ✕
+        </button>
+      </div>
+
+      <div id="brandDetailContent" class="brand-detail-content">
+        <div class="brands-empty-state">
+          Marka detayı yükleniyor...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/main.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/brandsHandler.js"></script>
+</body>
+</html>
