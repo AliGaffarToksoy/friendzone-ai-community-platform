@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   bindRoomEvents();
   prefillRoomCommunityFromQuery();
-
   await loadRooms();
 });
 
@@ -23,8 +22,11 @@ function bindRoomEvents() {
   const createRoomForm = document.getElementById('createRoomForm');
   const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
   const roomTypeFilter = document.getElementById('roomTypeFilter');
+  const roomTypeSelect = document.getElementById('roomType');
   const communityFilterInput = document.getElementById('communityFilterInput');
   const eventFilterInput = document.getElementById('eventFilterInput');
+  const closeRoomParticipantsBtn = document.getElementById('closeRoomParticipantsBtn');
+  const roomParticipantsModal = document.getElementById('roomParticipantsModal');
 
   document.querySelectorAll('.room-filter').forEach((button) => {
     button.addEventListener('click', async () => {
@@ -41,11 +43,29 @@ function bindRoomEvents() {
 
   if (openCreateRoomBtn) {
     openCreateRoomBtn.addEventListener('click', () => {
+    updateSmartRoomFields();
+
       if (createRoomModal) {
         createRoomModal.classList.remove('hidden');
       }
     });
   }
+
+  if (closeRoomParticipantsBtn) {
+  closeRoomParticipantsBtn.addEventListener('click', () => {
+    if (roomParticipantsModal) {
+      roomParticipantsModal.classList.add('hidden');
+    }
+  });
+}
+
+if (roomParticipantsModal) {
+  roomParticipantsModal.addEventListener('click', (event) => {
+    if (event.target === roomParticipantsModal) {
+      roomParticipantsModal.classList.add('hidden');
+    }
+  });
+}
 
   if (closeCreateRoomBtn) {
     closeCreateRoomBtn.addEventListener('click', () => {
@@ -77,6 +97,10 @@ function bindRoomEvents() {
   if (roomTypeFilter) {
     roomTypeFilter.addEventListener('change', loadRooms);
   }
+  if (roomTypeSelect) {
+  roomTypeSelect.addEventListener('change', updateSmartRoomFields);
+  updateSmartRoomFields();
+}
 
   if (communityFilterInput) {
   communityFilterInput.addEventListener('change', loadRooms);
@@ -112,9 +136,54 @@ function prefillRoomCommunityFromQuery() {
   }
 }
 
+function updateSmartRoomFields() {
+  const roomType = getInputValue('roomType') || 'casual';
+
+  const meetingFields = document.getElementById('meetingFields');
+  const languageField = document.getElementById('languageField');
+  const gameField = document.getElementById('gameField');
+
+  const showMeeting = ['event', 'meet', 'voice'].includes(roomType);
+  const showLanguage = roomType === 'language';
+  const showGame = roomType === 'gaming';
+
+  if (meetingFields) {
+    meetingFields.classList.toggle('smart-hidden', !showMeeting);
+  }
+
+  if (languageField) {
+    languageField.classList.toggle('smart-hidden', !showLanguage);
+  }
+
+  if (gameField) {
+    gameField.classList.toggle('smart-hidden', !showGame);
+  }
+
+  const provider = document.getElementById('roomMeetingProvider');
+  const meetingUrl = document.getElementById('roomMeetingUrl');
+
+  if (showMeeting && provider && !provider.value) {
+    provider.value = 'jitsi';
+  }
+
+  if (showMeeting && meetingUrl && !meetingUrl.value) {
+    const randomSlug = `friendzone-room-${Date.now()}`;
+    meetingUrl.value = `https://meet.jit.si/${randomSlug}`;
+  }
+
+  if (!showMeeting && provider) {
+    provider.value = '';
+  }
+
+  if (!showMeeting && meetingUrl) {
+    meetingUrl.value = '';
+  }
+}
+
 async function loadRooms() {
   const container = document.getElementById('roomsList');
   const roomTypeFilter = document.getElementById('roomTypeFilter');
+  const roomTypeSelect = document.getElementById('roomType');
   const communityFilterInput = document.getElementById('communityFilterInput');
   const eventFilterInput = document.getElementById('eventFilterInput');
 
@@ -501,6 +570,20 @@ async function createRoom(event) {
     showToast('Oda adı en az 3 karakter olmalıdır.', 'error');
     return;
   }
+  if (payload.room_type === 'language' && !payload.language) {
+  showToast('Dil pratiği odası için dil bilgisi girilmelidir.', 'error');
+  return;
+}
+
+if (payload.room_type === 'gaming' && !payload.game_title) {
+  showToast('Oyun odası için oyun adı girilmelidir.', 'error');
+  return;
+}
+
+if (['event', 'meet', 'voice'].includes(payload.room_type) && !payload.meeting_url) {
+  showToast('Bu oda tipi için toplantı linki girilmelidir.', 'error');
+  return;
+}
 
   const originalText = submitBtn ? submitBtn.textContent : 'Odayı Oluştur';
 
@@ -586,25 +669,115 @@ async function deleteRoom(roomId, roomName) {
 }
 
 async function loadRoomParticipants(roomId, roomName) {
+  const modal = document.getElementById('roomParticipantsModal');
+  const title = document.getElementById('roomParticipantsModalTitle');
+  const list = document.getElementById('roomParticipantsList');
+
+  if (title) {
+    title.textContent = `${roomName || 'Oda'} Katılımcıları`;
+  }
+
+  if (list) {
+    list.innerHTML = `
+      <div class="rooms-empty-state">
+        Katılımcılar yükleniyor...
+      </div>
+    `;
+  }
+
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
+
   const response = await authFetch(`${API_BASE}/api/rooms/${roomId}/participants`);
 
   if (!response || !response.success) {
+    if (list) {
+      list.innerHTML = `
+        <div class="rooms-empty-state error">
+          ${response?.message || 'Katılımcılar alınamadı.'}
+        </div>
+      `;
+    }
+
     showToast(response?.message || 'Katılımcılar alınamadı.', 'error');
     return;
   }
 
   const participants = response.data || [];
 
+  renderRoomParticipants(participants);
+}
+
+function renderRoomParticipants(participants) {
+  const list = document.getElementById('roomParticipantsList');
+
+  if (!list) return;
+
+  list.innerHTML = '';
+
   if (!participants.length) {
-    showToast(`${roomName} odasında aktif katılımcı yok.`, 'info');
+    list.innerHTML = `
+      <div class="rooms-empty-state">
+        Bu odada şu anda aktif katılımcı yok.
+      </div>
+    `;
     return;
   }
 
-  const names = participants
-    .map((participant) => participant.user?.name || 'FriendZone Kullanıcısı')
-    .join(', ');
+  participants.forEach((participant) => {
+    const user = participant.user || {};
 
-  showToast(`${roomName}: ${names}`, 'success');
+    const card = document.createElement('article');
+    card.className = 'room-participant-card';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'room-participant-avatar';
+
+    if (user.profile_image) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}/uploads/profile_images/${user.profile_image}`;
+      img.alt = user.name || 'FriendZone Kullanıcısı';
+      avatar.appendChild(img);
+    } else {
+      avatar.textContent = getInitials(user.name || 'FZ');
+    }
+
+    const info = document.createElement('div');
+    info.className = 'room-participant-info';
+
+    const name = document.createElement('strong');
+    name.textContent = user.name || 'FriendZone Kullanıcısı';
+
+    const meta = document.createElement('span');
+    meta.textContent = [
+      user.university,
+      user.department,
+      user.city
+    ].filter(Boolean).join(' · ') || 'Profil bilgisi yok';
+
+    info.appendChild(name);
+    info.appendChild(meta);
+
+    const role = document.createElement('span');
+    role.className = `room-participant-role role-${participant.role || 'participant'}`;
+    role.textContent = participant.role === 'host' ? 'Host' : 'Katılımcı';
+
+    card.appendChild(avatar);
+    card.appendChild(info);
+    card.appendChild(role);
+
+    list.appendChild(card);
+  });
+}
+
+function getInitials(name) {
+  return String(name || 'FZ')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'FZ';
 }
 
 function getInputValue(id) {
