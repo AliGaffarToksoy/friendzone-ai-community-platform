@@ -5,8 +5,10 @@ Notification service for FriendZone.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Iterable
 
 from backend.database.db_connection import db
+from backend.models.community_model import CommunityMember
 from backend.models.notification_model import Notification
 
 
@@ -15,13 +17,18 @@ DEFAULT_NOTIFICATION_ICONS = {
     "certificate_awarded": "🎓",
     "points_added": "⭐",
     "community_joined": "🌐",
+    "community_created": "🌐",
     "community_role_updated": "🛡️",
     "event_created": "📅",
     "event_joined": "✅",
     "event_review_created": "💬",
     "sponsor_added": "🤝",
+    "community_sponsor_added": "🤝",
+    "event_sponsor_added": "🤝",
     "social_room_created": "🎙️",
     "social_room_joined": "🎧",
+    "feed_post_created": "💡",
+    "feed_comment_created": "💬",
     "system": "🔔",
 }
 
@@ -108,6 +115,174 @@ def create_unique_notification(
     )
 
     return notification, True
+
+
+def notify_many(
+    user_ids: Iterable[int],
+    notification_type: str,
+    title: str,
+    message: str | None = None,
+    reference_type: str | None = None,
+    reference_id: int | None = None,
+    action_url: str | None = None,
+    icon: str | None = None,
+    exclude_user_ids: Iterable[int] | None = None,
+    unique: bool = True,
+    commit: bool = True,
+) -> list[Notification]:
+    """
+    Create notifications for multiple users.
+
+    This helper avoids duplicated user ids and supports excluding actor user ids.
+    """
+
+    excluded = set(int(user_id) for user_id in (exclude_user_ids or []))
+    unique_user_ids = []
+
+    for user_id in user_ids:
+        try:
+            clean_user_id = int(user_id)
+        except Exception:
+            continue
+
+        if clean_user_id in excluded:
+            continue
+
+        if clean_user_id not in unique_user_ids:
+            unique_user_ids.append(clean_user_id)
+
+    notifications = []
+
+    for user_id in unique_user_ids:
+        if unique:
+            notification, created = create_unique_notification(
+                user_id=user_id,
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                reference_type=reference_type,
+                reference_id=reference_id,
+                action_url=action_url,
+                icon=icon,
+                commit=False,
+            )
+
+            if created:
+                notifications.append(notification)
+        else:
+            notification = create_notification(
+                user_id=user_id,
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                reference_type=reference_type,
+                reference_id=reference_id,
+                action_url=action_url,
+                icon=icon,
+                commit=False,
+            )
+
+            notifications.append(notification)
+
+    if commit:
+        db.session.commit()
+
+    return notifications
+
+
+def get_community_admin_user_ids(community_id: int) -> list[int]:
+    """
+    Return active admin user ids for a community.
+    """
+
+    memberships = CommunityMember.query.filter_by(
+        community_id=community_id,
+        role="admin",
+        is_active=True,
+    ).all()
+
+    return [membership.user_id for membership in memberships]
+
+
+def get_community_member_user_ids(community_id: int) -> list[int]:
+    """
+    Return active member user ids for a community.
+    """
+
+    memberships = CommunityMember.query.filter_by(
+        community_id=community_id,
+        is_active=True,
+    ).all()
+
+    return [membership.user_id for membership in memberships]
+
+
+def notify_community_admins(
+    community_id: int,
+    notification_type: str,
+    title: str,
+    message: str | None = None,
+    reference_type: str | None = None,
+    reference_id: int | None = None,
+    action_url: str | None = None,
+    icon: str | None = None,
+    exclude_user_ids: Iterable[int] | None = None,
+    unique: bool = True,
+    commit: bool = True,
+) -> list[Notification]:
+    """
+    Notify active community admins.
+    """
+
+    admin_user_ids = get_community_admin_user_ids(community_id)
+
+    return notify_many(
+        user_ids=admin_user_ids,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        action_url=action_url,
+        icon=icon,
+        exclude_user_ids=exclude_user_ids,
+        unique=unique,
+        commit=commit,
+    )
+
+
+def notify_community_members(
+    community_id: int,
+    notification_type: str,
+    title: str,
+    message: str | None = None,
+    reference_type: str | None = None,
+    reference_id: int | None = None,
+    action_url: str | None = None,
+    icon: str | None = None,
+    exclude_user_ids: Iterable[int] | None = None,
+    unique: bool = True,
+    commit: bool = True,
+) -> list[Notification]:
+    """
+    Notify active community members.
+    """
+
+    member_user_ids = get_community_member_user_ids(community_id)
+
+    return notify_many(
+        user_ids=member_user_ids,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        action_url=action_url,
+        icon=icon,
+        exclude_user_ids=exclude_user_ids,
+        unique=unique,
+        commit=commit,
+    )
 
 
 def get_user_notifications(

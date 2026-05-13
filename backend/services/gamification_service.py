@@ -10,6 +10,7 @@ This service handles:
 - Default certificate seeding
 - Automatic certificate assignment
 - Gamification profile summary
+- Notification hooks for points, badges and certificates
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from backend.models.gamification_model import (
     UserPoint,
     UserPointTransaction,
 )
+from backend.services.notification_service import create_unique_notification
 
 
 DEFAULT_BADGES = [
@@ -139,6 +141,26 @@ POINT_RULES = {
     "event_review_created": 8,
     "sponsor_added": 12,
     "member_role_updated": 6,
+    "social_room_created": 10,
+    "social_room_joined": 5,
+}
+
+
+POINT_NOTIFICATION_TITLES = {
+    "profile_view": "Profil etkileşimi kazandın",
+    "profile_completed": "Profilini tamamladın",
+    "feed_post_created": "Paylaşım puanı kazandın",
+    "feed_comment_created": "Yorum puanı kazandın",
+    "feed_post_liked": "Beğeni puanı kazandın",
+    "community_joined": "Topluluk puanı kazandın",
+    "community_created": "Topluluk oluşturma puanı kazandın",
+    "event_joined": "Etkinlik katılım puanı kazandın",
+    "event_created": "Etkinlik oluşturma puanı kazandın",
+    "event_review_created": "Etkinlik değerlendirme puanı kazandın",
+    "sponsor_added": "Sponsor katkı puanı kazandın",
+    "member_role_updated": "Topluluk yönetim puanı kazandın",
+    "social_room_created": "Sosyal oda oluşturma puanı kazandın",
+    "social_room_joined": "Sosyal oda katılım puanı kazandın",
 }
 
 
@@ -253,11 +275,17 @@ def seed_default_certificates() -> list[Certificate]:
 def award_badges_if_eligible(user_id: int) -> list[UserBadge]:
     """
     Award active badges when user reaches required points.
+    Also creates notifications for newly awarded badges.
     """
 
     user_point = get_or_create_user_point(user_id)
 
-    badges = Badge.query.filter_by(is_active=True).order_by(Badge.required_points.asc()).all()
+    badges = (
+        Badge.query
+        .filter_by(is_active=True)
+        .order_by(Badge.required_points.asc())
+        .all()
+    )
 
     awarded_badges = []
 
@@ -279,10 +307,24 @@ def award_badges_if_eligible(user_id: int) -> list[UserBadge]:
         )
 
         db.session.add(user_badge)
+        db.session.flush()
+
+        create_unique_notification(
+            user_id=user_id,
+            notification_type="badge_awarded",
+            title="Yeni rozet kazandın",
+            message=f"{badge.name} rozetini kazandın.",
+            reference_type="badge",
+            reference_id=badge.id,
+            action_url="social-profile.html",
+            icon=badge.icon or "🏅",
+            commit=False,
+        )
+
         awarded_badges.append(user_badge)
 
     if awarded_badges:
-        db.session.commit()
+        db.session.flush()
 
     return awarded_badges
 
@@ -300,10 +342,12 @@ def user_has_badge_code(user_id: int, badge_code: str | None) -> bool:
     if not badge:
         return False
 
-    return UserBadge.query.filter_by(
+    user_badge = UserBadge.query.filter_by(
         user_id=user_id,
         badge_id=badge.id,
-    ).first() is not None
+    ).first()
+
+    return user_badge is not None
 
 
 def generate_certificate_number(user_id: int, certificate_code: str) -> str:
@@ -311,15 +355,16 @@ def generate_certificate_number(user_id: int, certificate_code: str) -> str:
     Generate unique certificate number.
     """
 
-    short_uuid = uuid.uuid4().hex[:8].upper()
     safe_code = certificate_code.upper().replace("-", "_")
+    unique_part = uuid.uuid4().hex[:8].upper()
 
-    return f"FZ-{safe_code}-{user_id}-{short_uuid}"
+    return f"FZ-{safe_code}-{user_id}-{unique_part}"
 
 
 def award_certificates_if_eligible(user_id: int) -> list[UserCertificate]:
     """
     Award active certificates when user reaches requirements.
+    Also creates notifications for newly awarded certificates.
     """
 
     seed_default_certificates()
@@ -357,10 +402,24 @@ def award_certificates_if_eligible(user_id: int) -> list[UserCertificate]:
         )
 
         db.session.add(user_certificate)
+        db.session.flush()
+
+        create_unique_notification(
+            user_id=user_id,
+            notification_type="certificate_awarded",
+            title="Yeni sertifika kazandın",
+            message=f"{certificate.title} sertifikasını kazandın.",
+            reference_type="certificate",
+            reference_id=certificate.id,
+            action_url="social-profile.html",
+            icon=certificate.icon or "🎓",
+            commit=False,
+        )
+
         awarded_certificates.append(user_certificate)
 
     if awarded_certificates:
-        db.session.commit()
+        db.session.flush()
 
     return awarded_certificates
 
@@ -372,32 +431,45 @@ def add_points(
     description: str | None = None,
     reference_type: str | None = None,
     reference_id: int | None = None,
-    allow_duplicate: bool = True,
+    allow_duplicate: bool = False,
 ) -> dict:
     """
-    Add social points to user.
+    Add points to a user according to an action type.
 
-    If allow_duplicate=False, the same action/reference pair is only counted once.
+    If allow_duplicate=False and reference_type/reference_id are provided,
+    the same action for the same reference is not counted twice.
     """
 
     seed_default_badges()
     seed_default_certificates()
 
-    if points is None:
-        points = POINT_RULES.get(action_type, 0)
+    action_type = str(action_type or "").strip()
 
-    points = int(points or 0)
-
-    if points == 0:
-        user_point = get_or_create_user_point(user_id)
+    if not action_type:
         return {
-            "user_point": user_point.to_dict(),
-            "transaction": None,
+            "success": False,
+            "message": "Action type zorunludur.",
+            "points_added": 0,
             "awarded_badges": [],
             "awarded_certificates": [],
         }
 
-    user_point = get_or_create_user_point(user_id)
+    if points is None:
+        points = POINT_RULES.get(action_type, 0)
+
+    try:
+        points = int(points)
+    except Exception:
+        points = 0
+
+    if points <= 0:
+        return {
+            "success": False,
+            "message": "Eklenecek puan bulunamadı.",
+            "points_added": 0,
+            "awarded_badges": [],
+            "awarded_certificates": [],
+        }
 
     if not allow_duplicate and reference_type and reference_id:
         existing_transaction = UserPointTransaction.query.filter_by(
@@ -408,20 +480,26 @@ def add_points(
         ).first()
 
         if existing_transaction:
+            user_point = get_or_create_user_point(user_id)
+
             return {
-                "user_point": user_point.to_dict(),
+                "success": True,
+                "message": "Bu aksiyon için puan daha önce verilmiş.",
+                "points_added": 0,
+                "points": user_point.to_dict(),
                 "transaction": existing_transaction.to_dict(),
                 "awarded_badges": [],
                 "awarded_certificates": [],
-                "duplicate_skipped": True,
             }
 
-    user_point.total_points = max(0, user_point.total_points + points)
+    user_point = get_or_create_user_point(user_id)
+
+    user_point.total_points = (user_point.total_points or 0) + points
     user_point.level = calculate_level(user_point.total_points)
 
     transaction = UserPointTransaction(
-        user_point_id=user_point.id,
         user_id=user_id,
+        user_point_id=user_point.id,
         action_type=action_type,
         points=points,
         description=description,
@@ -430,17 +508,33 @@ def add_points(
     )
 
     db.session.add(transaction)
-    db.session.commit()
+    db.session.flush()
+
+    create_unique_notification(
+        user_id=user_id,
+        notification_type="points_added",
+        title=POINT_NOTIFICATION_TITLES.get(action_type, "Puan kazandın"),
+        message=description or f"{points} sosyal puan kazandın.",
+        reference_type=reference_type or "points",
+        reference_id=reference_id or transaction.id,
+        action_url="notifications.html",
+        icon="⭐",
+        commit=False,
+    )
 
     awarded_badges = award_badges_if_eligible(user_id)
     awarded_certificates = award_certificates_if_eligible(user_id)
 
+    db.session.commit()
+
     return {
-        "user_point": user_point.to_dict(),
+        "success": True,
+        "message": "Puan işlemi tamamlandı.",
+        "points_added": points,
+        "points": user_point.to_dict(),
         "transaction": transaction.to_dict(),
         "awarded_badges": [item.to_dict() for item in awarded_badges],
         "awarded_certificates": [item.to_dict() for item in awarded_certificates],
-        "duplicate_skipped": False,
     }
 
 
@@ -451,7 +545,12 @@ def get_user_badges(user_id: int) -> list[dict]:
 
     seed_default_badges()
 
-    all_badges = Badge.query.filter_by(is_active=True).order_by(Badge.required_points.asc()).all()
+    all_badges = (
+        Badge.query
+        .filter_by(is_active=True)
+        .order_by(Badge.required_points.asc())
+        .all()
+    )
 
     earned_badges = UserBadge.query.filter_by(user_id=user_id).all()
 
@@ -524,7 +623,7 @@ def get_user_certificates(user_id: int) -> list[dict]:
 
 def get_recent_transactions(user_id: int, limit: int = 10) -> list[dict]:
     """
-    Return recent point transactions.
+    Return user's recent point transactions.
     """
 
     transactions = (
@@ -547,7 +646,7 @@ def get_next_badge(user_point: UserPoint) -> Badge | None:
         Badge.query
         .filter(
             Badge.is_active.is_(True),
-            Badge.required_points > user_point.total_points,
+            Badge.required_points > (user_point.total_points or 0),
         )
         .order_by(Badge.required_points.asc())
         .first()
@@ -560,32 +659,32 @@ def calculate_progress_to_next_badge(user_point: UserPoint, next_badge: Badge | 
     """
 
     if not next_badge:
-        return None
-
-    previous_required = 0
+        return 100
 
     previous_badge = (
         Badge.query
         .filter(
             Badge.is_active.is_(True),
-            Badge.required_points <= user_point.total_points,
+            Badge.required_points <= (user_point.total_points or 0),
         )
         .order_by(Badge.required_points.desc())
         .first()
     )
 
+    previous_required = 0
+
     if previous_badge:
         previous_required = previous_badge.required_points
 
     denominator = max(1, next_badge.required_points - previous_required)
-    numerator = max(0, user_point.total_points - previous_required)
+    numerator = max(0, (user_point.total_points or 0) - previous_required)
 
-    return round((numerator / denominator) * 100)
+    return min(100, int((numerator / denominator) * 100))
 
 
 def get_gamification_summary(user_id: int) -> dict:
     """
-    Return complete gamification summary for profile.
+    Return complete gamification summary for a user.
     """
 
     seed_default_badges()
@@ -593,12 +692,10 @@ def get_gamification_summary(user_id: int) -> dict:
 
     user_point = get_or_create_user_point(user_id)
 
-    db.session.commit()
-
     award_badges_if_eligible(user_id)
     award_certificates_if_eligible(user_id)
 
-    user_point = get_or_create_user_point(user_id)
+    db.session.commit()
 
     next_badge = get_next_badge(user_point)
     progress_to_next_badge = calculate_progress_to_next_badge(user_point, next_badge)
@@ -607,7 +704,7 @@ def get_gamification_summary(user_id: int) -> dict:
         "points": user_point.to_dict(),
         "badges": get_user_badges(user_id),
         "certificates": get_user_certificates(user_id),
-        "recent_transactions": get_recent_transactions(user_id),
         "next_badge": next_badge.to_dict() if next_badge else None,
         "progress_to_next_badge": progress_to_next_badge,
+        "recent_transactions": get_recent_transactions(user_id),
     }

@@ -14,6 +14,7 @@ from backend.models.user_model import User
 from backend.services.gamification_service import add_points
 from backend.services.recommendation_service import get_recommended_communities
 from backend.utils.helpers import error_response, success_response
+from backend.services.notification_service import create_notification, notify_community_admins
 
 
 community_bp = Blueprint("community", __name__)
@@ -466,7 +467,32 @@ def update_member_role(community_id: int, target_user_id: int) -> tuple:
         if get_admin_count(community_id) <= 1:
             return error_response("Toplulukta en az bir admin kalmalıdır.", status_code=409)
 
+    old_role = target_membership.role
+
     target_membership.role = new_role
+
+    create_notification(
+
+        user_id=target_user_id,
+
+        notification_type="community_role_updated",
+
+        title="Topluluk rolün güncellendi",
+
+        message=f"{community.name} topluluğundaki rolün {old_role} → {new_role} olarak güncellendi.",
+
+        reference_type="community",
+
+        reference_id=community.id,
+
+        action_url=f"community.html?id={community.id}",
+
+        icon="🛡️",
+
+        commit=False,
+
+    )
+
     db.session.commit()
 
     if old_role != new_role:
@@ -597,6 +623,20 @@ def join_community() -> tuple:
 
     room = ensure_chat_room_for_community(community)
     room.current_members = get_member_count(community.id)
+
+    notify_community_admins(
+        community_id=community.id,
+        notification_type="community_joined",
+        title="Topluluğa yeni üye katıldı",
+        message=f"{user.name} kullanıcısı {community.name} topluluğuna katıldı.",
+        reference_type="community",
+        reference_id=community.id,
+        action_url=f"community.html?id={community.id}",
+        icon="🌐",
+        exclude_user_ids=[user_id],
+        unique=False,
+        commit=False,
+    )
 
     db.session.commit()
 

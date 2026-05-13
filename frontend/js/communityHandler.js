@@ -2,7 +2,6 @@ let allCommunitiesCache = [];
 let recommendedCommunitiesCache = [];
 let myCommunitiesCache = [];
 let currentUserProfile = null;
-let communitySponsorsCache = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
@@ -16,13 +15,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindCommunityEvents();
 
   await Promise.all([
-  loadCommunityDetails(),
-  loadMyCommunitiesForChat(),
-  loadMessages(),
-  loadCommunityEvents(),
-  loadCommunityMembers(),
-  loadCommunityRooms(),
-  loadCommunitySponsors()
+    loadCurrentUserProfile(),
+    loadMyCommunities(),
+    loadRecommendedCommunities(),
+    loadAllCommunities()
   ]);
 
   applyFilters();

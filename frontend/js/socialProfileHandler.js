@@ -34,7 +34,7 @@ async function loadSocialProfile() {
     return;
   }
 
-  const response = await authFetch(`${API_BASE}/api/users/profile/${currentUserId}`);
+  const response = await authFetch(`${API_BASE}/api/user/profile/${currentUserId}`);
 
   if (!response || !response.success) {
     const fallbackResponse = await authFetch(`${API_BASE}/api/user/profile/${currentUserId}`);
