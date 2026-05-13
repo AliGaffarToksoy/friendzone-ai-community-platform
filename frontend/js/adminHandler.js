@@ -145,7 +145,7 @@ async function loadStats() {
 }
 
 async function loadUsers() {
-  const response = await adminFetch('/admin/api/users');
+  const response = await adminFetch('/admin/api/user');
 
   if (!response || !response.success) return;
 

@@ -20,6 +20,7 @@ from backend.models.event_model import Event, EventParticipant, EventReview
 from backend.models.user_model import User
 from backend.services.gamification_service import add_points
 from backend.utils.helpers import error_response, success_response
+from backend.services.notification_service import create_unique_notification, notify_community_members
 
 
 event_bp = Blueprint("events", __name__)
@@ -353,6 +354,20 @@ def create_event() -> tuple:
         allow_duplicate=False,
     )
 
+    notify_community_members(
+        community_id=event.community_id,
+        notification_type="event_created",
+        title="Toplulukta yeni etkinlik oluşturuldu",
+        message=f"{event.title} etkinliği toplulukta yayınlandı.",
+        reference_type="event",
+        reference_id=event.id,
+        action_url=f"community.html?id={event.community_id}",
+        icon="📅",
+        exclude_user_ids=[user_id],
+        unique=False,
+        commit=True,
+    )
+
     return success_response("Etkinlik oluşturuldu.", serialize_event(event, user_id=user_id), status_code=201)
 
 
@@ -542,6 +557,22 @@ def join_event(event_id: int) -> tuple:
             allow_duplicate=False,
         )
 
+        actor = User.query.get(user_id)
+        actor_name = actor.name if actor else "Bir kullanıcı"
+
+        if event.created_by and event.created_by != user_id:
+            create_unique_notification(
+                user_id=event.created_by,
+                notification_type="event_joined",
+                title="Etkinliğine yeni katılımcı geldi",
+                message=f"{actor_name} kullanıcısı {event.title} etkinliğine katıldı.",
+                reference_type="event",
+                reference_id=event.id,
+                action_url=f"community.html?id={event.community_id}",
+                icon="✅",
+                commit=True,
+            )
+
     return success_response("Etkinlik katılım durumu güncellendi.", serialize_event(event, user_id=user_id))
 
 
@@ -624,6 +655,9 @@ def create_or_update_review(event_id: int) -> tuple:
 
     db.session.commit()
 
+    user = User.query.get(user_id)
+    actor_name = user.name if user else "Bir kullanıcı"
+
     if is_new_review:
         add_points(
             user_id=user_id,
@@ -633,6 +667,19 @@ def create_or_update_review(event_id: int) -> tuple:
             reference_id=review.id,
             allow_duplicate=False,
         )
+
+        if event.created_by and event.created_by != user_id:
+            create_unique_notification(
+                user_id=event.created_by,
+                notification_type="event_review_created",
+                title="Etkinliğine yeni değerlendirme geldi",
+                message=f"{actor_name} kullanıcısı {event.title} etkinliğini değerlendirdi.",
+                reference_type="event_review",
+                reference_id=review.id,
+                action_url=f"community.html?id={event.community_id}",
+                icon="💬",
+                commit=True,
+            )
 
     user = User.query.get(user_id)
 
