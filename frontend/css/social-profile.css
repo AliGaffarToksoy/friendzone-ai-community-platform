@@ -1159,3 +1159,22 @@
   color: white;
   transform: translateY(-1px);
 }
+
+.profile-report-action {
+  width: fit-content;
+  min-height: 36px;
+  margin-top: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #fecaca;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.profile-report-action:hover {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ffffff;
+}

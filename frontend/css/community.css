@@ -692,3 +692,14 @@
     display: grid;
   }
 }
+
+.report-community-action {
+  border-color: rgba(239, 68, 68, 0.24) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #fecaca !important;
+}
+
+.report-community-action:hover {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #ffffff !important;
+}

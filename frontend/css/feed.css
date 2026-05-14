@@ -607,3 +607,33 @@
     width: 100%;
   }
 }
+
+.report-feed-action {
+  border-color: rgba(239, 68, 68, 0.24) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #fecaca !important;
+}
+
+.report-feed-action:hover {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.comment-report-action {
+  width: fit-content;
+  min-height: 32px;
+  margin-top: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #fecaca;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.comment-report-action:hover {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ffffff;
+}

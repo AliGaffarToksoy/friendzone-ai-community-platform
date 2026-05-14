@@ -13,6 +13,7 @@ from backend.models.gamification_model import Badge, UserBadge, UserPoint, UserP
 from backend.models.certificate_model import Certificate, UserCertificate
 from backend.models.social_room_model import SocialRoom, SocialRoomParticipant
 from backend.models.notification_model import Notification
+from backend.models.moderation_model import ModerationReport, ModerationAction, UserWarning
 
 __all__ = [
     "User",
