@@ -4,6 +4,21 @@ let socialProfileCommunities = [];
 let socialGamification = null;
 let selectedCertificate = null;
 
+function getProfileUserId() {
+  const params = new URLSearchParams(window.location.search);
+  const urlUserId = params.get('id');
+  const currentUserId = localStorage.getItem('user_id');
+
+  return urlUserId || currentUserId;
+}
+
+function isViewingOwnProfile() {
+  const currentUserId = Number(localStorage.getItem('user_id'));
+  const profileUserId = Number(getProfileUserId());
+
+  return currentUserId === profileUserId;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const currentUserId = localStorage.getItem('user_id');
 
@@ -27,17 +42,33 @@ bindCertificateModalEvents();
 });
 
 async function loadSocialProfile() {
+
   const currentUserId = localStorage.getItem('user_id');
 
+  const profileUserId = getProfileUserId();
+
   if (!currentUserId) {
+
     logout();
+
     return;
+
   }
 
-  const response = await authFetch(`${API_BASE}/api/user/profile/${currentUserId}`);
+  if (!profileUserId) {
+
+    showToast('Profil kullanıcısı bulunamadı.', 'error');
+
+    renderFallbackProfile();
+
+    return;
+
+  }
+
+  const response = await authFetch(`${API_BASE}/api/user/profile/${profileUserId}`);
 
   if (!response || !response.success) {
-    const fallbackResponse = await authFetch(`${API_BASE}/api/user/profile/${currentUserId}`);
+    const fallbackResponse = await authFetch(`${API_BASE}/api/user/profile/${profileUserId}`);
 
     if (!fallbackResponse || !fallbackResponse.success) {
       showToast(
@@ -145,6 +176,56 @@ function renderProfileHeader() {
   if (personality) {
     personality.textContent = `Kişilik: ${user.personality_type || '-'}`;
   }
+
+  renderProfileReportButton(user, displayName);
+}
+
+function renderProfileReportButton(user, displayName) {
+  const currentUserId = Number(localStorage.getItem('user_id'));
+  const profileUserId = Number(user.id);
+
+  const existingButton = document.getElementById('profileReportBtn');
+
+  if (existingButton) {
+    existingButton.remove();
+  }
+
+  if (!profileUserId || currentUserId === profileUserId) {
+    return;
+  }
+
+  const anchorElement =
+    document.getElementById('profileHeadline') ||
+    document.getElementById('profilePersonality') ||
+    document.getElementById('profileName');
+
+  if (!anchorElement || !anchorElement.parentElement) {
+    return;
+  }
+
+  const reportBtn = document.createElement('button');
+  reportBtn.id = 'profileReportBtn';
+  reportBtn.type = 'button';
+  reportBtn.className = 'profile-report-action';
+  reportBtn.textContent = 'Rapor Et';
+
+  reportBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (typeof window.openReportModal === 'function') {
+      window.openReportModal(
+        'user',
+        profileUserId,
+        displayName || `Kullanıcı #${profileUserId}`
+      );
+      return;
+    }
+
+    showToast('Raporlama sistemi yüklenemedi.', 'error');
+  });
+
+  anchorElement.parentElement.appendChild(reportBtn);
 }
 
 function renderAboutSection() {

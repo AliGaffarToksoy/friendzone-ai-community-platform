@@ -248,8 +248,29 @@ function createPostCard(post) {
   commentsBtn.textContent = '💬 Yorumlar';
   commentsBtn.addEventListener('click', () => openComments(post.id));
 
+  const reportPostBtn = document.createElement('button');
+  reportPostBtn.type = 'button';
+  reportPostBtn.className = 'feed-action report-feed-action';
+  reportPostBtn.textContent = '🚩 Rapor Et';
+  reportPostBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (typeof window.openReportModal === 'function') {
+      window.openReportModal(
+        'feed_post',
+        post.id,
+        post.content ? post.content.slice(0, 80) : `Gönderi #${post.id}`
+      );
+      return;
+    }
+
+    showToast('Raporlama sistemi yüklenemedi.', 'error');
+  });
+
   actions.appendChild(likeBtn);
   actions.appendChild(commentsBtn);
+  actions.appendChild(reportPostBtn);
 
   if (post.can_delete) {
     const deleteBtn = document.createElement('button');
@@ -464,8 +485,29 @@ function renderComments(comments) {
     const content = document.createElement('p');
     content.textContent = comment.content;
 
+    const reportCommentBtn = document.createElement('button');
+    reportCommentBtn.type = 'button';
+    reportCommentBtn.className = 'comment-report-action';
+    reportCommentBtn.textContent = 'Rapor Et';
+    reportCommentBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (typeof window.openReportModal === 'function') {
+        window.openReportModal(
+          'feed_comment',
+          comment.id,
+          comment.content ? comment.content.slice(0, 80) : `Yorum #${comment.id}`
+        );
+        return;
+      }
+
+      showToast('Raporlama sistemi yüklenemedi.', 'error');
+    });
+
     body.appendChild(top);
     body.appendChild(content);
+    body.appendChild(reportCommentBtn);
 
     card.appendChild(avatar);
     card.appendChild(body);

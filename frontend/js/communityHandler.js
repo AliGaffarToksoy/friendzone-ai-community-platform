@@ -459,8 +459,29 @@ function renderCommunities(list, container, isRecommended = false) {
     openBtn.href = `community.html?id=${community.id}`;
     openBtn.textContent = 'Sohbete Gir';
 
+    const reportBtn = document.createElement('button');
+    reportBtn.className = 'secondary-action report-community-action';
+    reportBtn.type = 'button';
+    reportBtn.textContent = 'Rapor Et';
+    reportBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (typeof window.openReportModal === 'function') {
+        window.openReportModal(
+          'community',
+          community.id,
+          community.name || `Topluluk #${community.id}`
+        );
+        return;
+      }
+
+      showToast('Raporlama sistemi yüklenemedi.', 'error');
+    });
+
     actions.appendChild(joinBtn);
     actions.appendChild(openBtn);
+    actions.appendChild(reportBtn);
 
     footer.appendChild(stats);
     footer.appendChild(actions);

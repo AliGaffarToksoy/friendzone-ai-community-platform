@@ -785,8 +785,30 @@ function renderCommunityEvents() {
     detailBtn.textContent = 'Detay';
     detailBtn.addEventListener('click', () => openEventDetail(event.id));
 
+    const reportEventBtn = document.createElement('button');
+    reportEventBtn.type = 'button';
+    reportEventBtn.className = 'report-event-action';
+    reportEventBtn.textContent = 'Rapor Et';
+    reportEventBtn.addEventListener('click', (clickEvent) => {
+
+      clickEvent.preventDefault();
+      clickEvent.stopPropagation();
+
+      if (typeof window.openReportModal === 'function') {
+        window.openReportModal(
+
+          'event',
+          event.id,
+          event.title || `Etkinlik #${event.id}`
+        );
+        return;
+      }
+      showToast('Raporlama sistemi yüklenemedi.', 'error');
+    });
+
     actions.appendChild(goingBtn);
     actions.appendChild(detailBtn);
+    actions.appendChild(reportEventBtn);
 
     if (event.can_manage_event) {
       const sponsorBtn = document.createElement('button');

@@ -18,6 +18,7 @@ from backend.models.brand_model import Brand, CommunitySponsor, EventSponsor
 from backend.models.community_model import Community, CommunityMember
 from backend.models.event_model import Event
 from backend.services.gamification_service import add_points
+from backend.services.notification_service import notify_community_members
 from backend.utils.helpers import error_response, success_response
 
 
@@ -512,7 +513,8 @@ def add_event_sponsor(event_id: int) -> tuple:
     """
     Add sponsor brand to event.
 
-    A new event sponsor relationship gives social points.
+    A new event sponsor relationship gives social points and notifies
+    related community members.
     Updating an existing relationship does not give duplicate points.
     """
 
@@ -594,6 +596,20 @@ def add_event_sponsor(event_id: int) -> tuple:
             allow_duplicate=False,
         )
 
+        notify_community_members(
+            community_id=event.community_id,
+            notification_type="event_sponsor_added",
+            title="Etkinliğe yeni sponsor eklendi",
+            message=f"{event.title} etkinliğine {brand.name} sponsoru eklendi.",
+            reference_type="event_sponsor",
+            reference_id=sponsor.id,
+            action_url=f"community.html?id={event.community_id}",
+            icon="🤝",
+            exclude_user_ids=[user_id],
+            unique=False,
+            commit=True,
+        )
+
     return success_response("Etkinlik sponsoru kaydedildi.", sponsor.to_dict(), status_code=201)
 
 
@@ -668,7 +684,8 @@ def add_community_sponsor(community_id: int) -> tuple:
     """
     Add sponsor brand to community.
 
-    A new community sponsor relationship gives social points.
+    A new community sponsor relationship gives social points and notifies
+    related community members.
     Updating an existing relationship does not give duplicate points.
     """
 
@@ -748,6 +765,20 @@ def add_community_sponsor(community_id: int) -> tuple:
             reference_type="community_sponsor",
             reference_id=sponsor.id,
             allow_duplicate=False,
+        )
+
+        notify_community_members(
+            community_id=community.id,
+            notification_type="community_sponsor_added",
+            title="Topluluğa yeni sponsor eklendi",
+            message=f"{community.name} topluluğuna {brand.name} sponsoru eklendi.",
+            reference_type="community_sponsor",
+            reference_id=sponsor.id,
+            action_url=f"community.html?id={community.id}",
+            icon="🤝",
+            exclude_user_ids=[user_id],
+            unique=False,
+            commit=True,
         )
 
     return success_response("Topluluk sponsoru kaydedildi.", sponsor.to_dict(), status_code=201)
