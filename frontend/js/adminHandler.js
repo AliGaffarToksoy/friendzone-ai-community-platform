@@ -1,4 +1,5 @@
-let adminCredentials = null;
+const ADMIN_AUTH_KEY = 'friendzone_admin_auth';
+
 let registrationChartInstance = null;
 let personalityChartInstance = null;
 
@@ -10,16 +11,11 @@ let hobbyStatsCache = [];
 document.addEventListener('DOMContentLoaded', () => {
   bindAdminEvents();
 
-  const savedAdmin = sessionStorage.getItem('friendzone_admin_auth');
+  const savedAdminAuth = sessionStorage.getItem(ADMIN_AUTH_KEY);
 
-  if (savedAdmin) {
-    try {
-      adminCredentials = JSON.parse(savedAdmin);
-      showDashboard();
-      loadAdminDashboard();
-    } catch {
-      sessionStorage.removeItem('friendzone_admin_auth');
-    }
+  if (savedAdminAuth) {
+    showDashboard();
+    loadAdminDashboard();
   }
 });
 
@@ -45,9 +41,8 @@ function bindAdminEvents() {
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('friendzone_admin_auth');
-      adminCredentials = null;
-      location.reload();
+      sessionStorage.removeItem(ADMIN_AUTH_KEY);
+      window.location.href = 'admin.html';
     });
   }
 
@@ -57,7 +52,7 @@ function bindAdminEvents() {
 
   if (hideExportBtn) {
     hideExportBtn.addEventListener('click', () => {
-      document.getElementById('exportSection').classList.add('hidden');
+      document.getElementById('exportSection')?.classList.add('hidden');
     });
   }
 
@@ -73,28 +68,72 @@ function bindAdminEvents() {
 async function handleAdminLogin(event) {
   event.preventDefault();
 
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value.trim();
+  const username = document.getElementById('username')?.value.trim();
+  const password = document.getElementById('password')?.value.trim();
 
-  adminCredentials = { username, password };
+  if (!username || !password) {
+    showToast('Admin kullanıcı adı ve şifre zorunludur.', 'error');
+    return;
+  }
+
+  const encodedAuth = btoa(`${username}:${password}`);
+  sessionStorage.setItem(ADMIN_AUTH_KEY, encodedAuth);
 
   const response = await adminFetch('/admin/api/dashboard/stats');
 
   if (!response || !response.success) {
+    sessionStorage.removeItem(ADMIN_AUTH_KEY);
     showToast('Admin kullanıcı adı veya şifre hatalı.', 'error');
-    adminCredentials = null;
     return;
   }
-
-  sessionStorage.setItem('friendzone_admin_auth', JSON.stringify(adminCredentials));
 
   showDashboard();
   await loadAdminDashboard();
 }
 
 function showDashboard() {
-  document.getElementById('adminLoginView').classList.add('hidden');
-  document.getElementById('adminDashboardView').classList.remove('hidden');
+  document.getElementById('adminLoginView')?.classList.add('hidden');
+  document.getElementById('adminDashboardView')?.classList.remove('hidden');
+}
+
+async function adminFetch(path, options = {}) {
+  const encodedAuth = sessionStorage.getItem(ADMIN_AUTH_KEY);
+
+  if (!encodedAuth) {
+    return null;
+  }
+
+  const headers = new Headers(options.headers || {});
+  headers.set('Authorization', `Basic ${encodedAuth}`);
+
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      mode: 'cors',
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (response.status === 401) {
+      sessionStorage.removeItem(ADMIN_AUTH_KEY);
+      showToast('Admin oturumu geçersiz. Tekrar giriş yap.', 'error');
+
+      document.getElementById('adminLoginView')?.classList.remove('hidden');
+      document.getElementById('adminDashboardView')?.classList.add('hidden');
+
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    showToast(`Admin API hatası: ${error.message}`, 'error');
+    return null;
+  }
 }
 
 async function loadAdminDashboard() {
@@ -103,31 +142,8 @@ async function loadAdminDashboard() {
     loadUsers(),
     loadCommunities(),
     loadPersonalityStats(),
-    loadHobbyStats()
+    loadHobbyStats(),
   ]);
-}
-
-async function adminFetch(path) {
-  if (!adminCredentials) return null;
-
-  const headers = new Headers();
-  const token = btoa(`${adminCredentials.username}:${adminCredentials.password}`);
-
-  headers.set('Authorization', `Basic ${token}`);
-
-  try {
-    const response = await fetch(`${API_BASE}${path}`, { headers });
-
-    if (response.status === 401) {
-      showToast('Admin oturumu geçersiz.', 'error');
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    showToast(`Admin API hatası: ${error.message}`, 'error');
-    return null;
-  }
 }
 
 async function loadStats() {
@@ -135,11 +151,11 @@ async function loadStats() {
 
   if (!response || !response.success) return;
 
-  const stats = response.data;
+  const stats = response.data || {};
 
-  document.getElementById('userCount').textContent = stats.user_count || 0;
-  document.getElementById('communityCount').textContent = stats.community_count || 0;
-  document.getElementById('messageCount').textContent = stats.message_count || 0;
+  setText('userCount', stats.user_count || 0);
+  setText('communityCount', stats.community_count || 0);
+  setText('messageCount', stats.message_count || 0);
 
   renderRegistrationChart(stats.registrations_last_7_days || []);
 }
@@ -169,8 +185,11 @@ async function loadPersonalityStats() {
 
   personalityStatsCache = response.data || [];
 
-  const total = personalityStatsCache.reduce((sum, item) => sum + item.count, 0);
-  document.getElementById('personalityCount').textContent = total;
+  const total = personalityStatsCache.reduce((sum, item) => {
+    return sum + Number(item.count || 0);
+  }, 0);
+
+  setText('personalityCount', total);
 
   renderPersonalityChart(personalityStatsCache);
 }
@@ -186,7 +205,7 @@ async function loadHobbyStats() {
 
 function renderRegistrationChart(data) {
   const canvas = document.getElementById('registrationChart');
-  if (!canvas) return;
+  if (!canvas || typeof Chart === 'undefined') return;
 
   const labels = data.map((item) => item.date);
   const values = data.map((item) => item.count);
@@ -206,9 +225,9 @@ function renderRegistrationChart(data) {
           tension: 0.38,
           borderWidth: 3,
           pointRadius: 4,
-          fill: true
-        }
-      ]
+          fill: true,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -216,37 +235,37 @@ function renderRegistrationChart(data) {
       plugins: {
         legend: {
           labels: {
-            color: '#cbd5e1'
-          }
-        }
+            color: '#cbd5e1',
+          },
+        },
       },
       scales: {
         x: {
           ticks: {
-            color: '#94a3b8'
+            color: '#94a3b8',
           },
           grid: {
-            color: 'rgba(148, 163, 184, 0.12)'
-          }
+            color: 'rgba(148, 163, 184, 0.12)',
+          },
         },
         y: {
           beginAtZero: true,
           ticks: {
             color: '#94a3b8',
-            precision: 0
+            precision: 0,
           },
           grid: {
-            color: 'rgba(148, 163, 184, 0.12)'
-          }
-        }
-      }
-    }
+            color: 'rgba(148, 163, 184, 0.12)',
+          },
+        },
+      },
+    },
   });
 }
 
 function renderPersonalityChart(data) {
   const canvas = document.getElementById('personalityChart');
-  if (!canvas) return;
+  if (!canvas || typeof Chart === 'undefined') return;
 
   const labels = data.map((item) => item.type);
   const values = data.map((item) => item.count);
@@ -263,9 +282,9 @@ function renderPersonalityChart(data) {
         {
           label: 'Kişilik Tipleri',
           data: values,
-          borderWidth: 2
-        }
-      ]
+          borderWidth: 2,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -275,11 +294,11 @@ function renderPersonalityChart(data) {
           position: 'bottom',
           labels: {
             color: '#cbd5e1',
-            padding: 16
-          }
-        }
-      }
-    }
+            padding: 16,
+          },
+        },
+      },
+    },
   });
 }
 
@@ -300,7 +319,7 @@ function renderHobbyStats() {
     return;
   }
 
-  const maxCount = Math.max(...hobbyStatsCache.map((item) => item.count));
+  const maxCount = Math.max(...hobbyStatsCache.map((item) => Number(item.count || 0)), 1);
 
   hobbyStatsCache.slice(0, 10).forEach((item) => {
     const row = document.createElement('div');
@@ -310,10 +329,10 @@ function renderHobbyStats() {
     top.className = 'hobby-stat-top';
 
     const name = document.createElement('strong');
-    name.textContent = item.hobby;
+    name.textContent = item.hobby || '-';
 
     const count = document.createElement('span');
-    count.textContent = `${item.count} kullanıcı`;
+    count.textContent = `${item.count || 0} kullanıcı`;
 
     top.appendChild(name);
     top.appendChild(count);
@@ -322,7 +341,7 @@ function renderHobbyStats() {
     bar.className = 'hobby-stat-bar';
 
     const fill = document.createElement('div');
-    fill.style.width = `${Math.max(8, (item.count / maxCount) * 100)}%`;
+    fill.style.width = `${Math.max(8, (Number(item.count || 0) / maxCount) * 100)}%`;
 
     bar.appendChild(fill);
 
@@ -340,7 +359,7 @@ function renderUsersTable() {
   if (!container) return;
 
   const filtered = usersCache.filter((user) => {
-    const text = `${user.name} ${user.email} ${user.university} ${user.department} ${user.personality_type}`.toLowerCase();
+    const text = `${user.name || ''} ${user.email || ''} ${user.university || ''} ${user.department || ''} ${user.personality_type || ''}`.toLowerCase();
     return text.includes(search);
   });
 
@@ -377,10 +396,10 @@ function renderUsersTable() {
     const tr = document.createElement('tr');
 
     tr.innerHTML = `
-      <td>#${user.id}</td>
+      <td>#${escapeHtml(user.id)}</td>
       <td>
         <div class="table-user-cell">
-          <div class="table-avatar">${getInitials(user.name)}</div>
+          <div class="table-avatar">${escapeHtml(getInitials(user.name))}</div>
           <div>
             <strong>${escapeHtml(user.name || 'İsimsiz Kullanıcı')}</strong>
             <span>${escapeHtml(user.email || '-')}</span>
@@ -410,7 +429,7 @@ function renderCommunitiesTable() {
   if (!container) return;
 
   const filtered = communitiesCache.filter((community) => {
-    const text = `${community.name} ${community.category} ${community.description}`.toLowerCase();
+    const text = `${community.name || ''} ${community.category || ''} ${community.description || ''}`.toLowerCase();
     return text.includes(search);
   });
 
@@ -446,10 +465,10 @@ function renderCommunitiesTable() {
     const tr = document.createElement('tr');
 
     tr.innerHTML = `
-      <td>#${community.id}</td>
+      <td>#${escapeHtml(community.id)}</td>
       <td>
         <div class="table-user-cell">
-          <div class="table-avatar">${getInitials(community.name)}</div>
+          <div class="table-avatar">${escapeHtml(getInitials(community.name))}</div>
           <div>
             <strong>${escapeHtml(community.name || '-')}</strong>
             <span>${escapeHtml(community.description || '-')}</span>
@@ -457,8 +476,8 @@ function renderCommunitiesTable() {
         </div>
       </td>
       <td><span class="admin-badge">${escapeHtml(community.category || '-')}</span></td>
-      <td>${community.member_count || 0}</td>
-      <td>${community.max_members || '-'}</td>
+      <td>${escapeHtml(community.member_count || 0)}</td>
+      <td>${escapeHtml(community.max_members || '-')}</td>
       <td>${community.is_active ? '<span class="status-badge active">Aktif</span>' : '<span class="status-badge passive">Pasif</span>'}</td>
     `;
 
@@ -482,6 +501,8 @@ async function exportData() {
   const section = document.getElementById('exportSection');
   const pre = document.getElementById('exportData');
 
+  if (!section || !pre) return;
+
   section.classList.remove('hidden');
   pre.textContent = JSON.stringify(response.data, null, 2);
 
@@ -490,11 +511,20 @@ async function exportData() {
   showToast('Export başarıyla hazırlandı.', 'success');
 }
 
+function setText(id, value) {
+  const element = document.getElementById(id);
+
+  if (element) {
+    element.textContent = String(value);
+  }
+}
+
 function getInitials(name) {
   if (!name) return 'FZ';
 
-  return name
+  return String(name)
     .split(' ')
+    .filter(Boolean)
     .map((part) => part[0])
     .join('')
     .slice(0, 2)
@@ -502,7 +532,7 @@ function getInitials(name) {
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
