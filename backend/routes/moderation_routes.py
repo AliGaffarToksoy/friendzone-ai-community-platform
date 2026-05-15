@@ -3,7 +3,9 @@ Moderation and reporting routes for FriendZone.
 
 This API powers:
 - User-facing report creation
+- User-facing moderation warning list and acknowledgement
 - Admin moderation dashboard
+- Admin report detail and action history
 - Admin actions on users, posts, comments, communities, events, rooms
 - Moderation action logs
 """
@@ -68,6 +70,21 @@ VALID_REPORT_REASONS = {
     "other",
 }
 
+VALID_ADMIN_ACTIONS = {
+    "warn_user",
+    "deactivate_user",
+    "reactivate_user",
+    "hide_feed_post",
+    "restore_feed_post",
+    "hide_feed_comment",
+    "restore_feed_comment",
+    "deactivate_community",
+    "reactivate_community",
+    "deactivate_event",
+    "reactivate_event",
+    "close_social_room",
+}
+
 
 def admin_required(func):
     """
@@ -93,18 +110,6 @@ def admin_required(func):
         return func(*args, **kwargs)
 
     return wrapper
-
-
-def get_current_user_id_or_none() -> int | None:
-    """
-    Return JWT user id if available.
-    """
-
-    try:
-        identity = get_jwt_identity()
-        return int(identity) if identity is not None else None
-    except Exception:
-        return None
 
 
 def normalize_text(value: object, default: str = "") -> str:
@@ -181,9 +186,34 @@ def get_target_owner_user_id(target_type: str, target_object: object | None) -> 
         return getattr(target_object, "created_by", None)
 
     if target_type == "social_room":
-        return getattr(target_object, "created_by", None) or getattr(target_object, "host_user_id", None)
+        return (
+            getattr(target_object, "created_by", None)
+            or getattr(target_object, "host_user_id", None)
+            or getattr(target_object, "user_id", None)
+        )
 
     return None
+
+
+def make_user_summary(user: User | None, include_active: bool = False) -> dict | None:
+    """
+    Create compact user summary.
+    """
+
+    if not user:
+        return None
+
+    data = {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "university": user.university,
+    }
+
+    if include_active:
+        data["is_active"] = user.is_active
+
+    return data
 
 
 def make_target_summary(target_type: str, target_object: object | None) -> dict | None:
@@ -253,6 +283,7 @@ def make_target_summary(target_type: str, target_object: object | None) -> dict 
             "subtitle": getattr(target_object, "description", None),
             "created_by": getattr(target_object, "created_by", None),
             "is_active": getattr(target_object, "is_active", None),
+            "status": getattr(target_object, "status", None),
         }
 
     return {
@@ -294,6 +325,49 @@ def serialize_action(action: ModerationAction) -> dict:
         target_user=target_user,
         report=report,
     )
+
+
+def serialize_warning(warning: UserWarning) -> dict:
+    """
+    Serialize user warning for admin and user-facing warning endpoints.
+    """
+
+    user = User.query.get(warning.user_id) if warning.user_id else None
+    admin_user = User.query.get(warning.admin_user_id) if warning.admin_user_id else None
+    report = ModerationReport.query.get(warning.report_id) if warning.report_id else None
+
+    return {
+        "id": warning.id,
+        "user_id": warning.user_id,
+        "admin_user_id": warning.admin_user_id,
+        "report_id": warning.report_id,
+        "title": warning.title,
+        "message": warning.message,
+        "severity": warning.severity,
+        "is_acknowledged": warning.is_acknowledged,
+        "acknowledged_at": warning.acknowledged_at.isoformat() if warning.acknowledged_at else None,
+        "created_at": warning.created_at.isoformat() if warning.created_at else None,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "is_active": user.is_active,
+            "university": user.university,
+        } if user else None,
+        "admin_user": {
+            "id": admin_user.id,
+            "name": admin_user.name,
+            "email": admin_user.email,
+        } if admin_user else None,
+        "report": {
+            "id": report.id,
+            "reason": report.reason,
+            "severity": report.severity,
+            "status": report.status,
+            "target_type": report.target_type,
+            "target_id": report.target_id,
+        } if report else None,
+    }
 
 
 def create_moderation_action(
@@ -406,6 +480,56 @@ def create_report() -> tuple:
 
     return success_response("Rapor oluşturuldu.", serialize_report(report), status_code=201)
 
+
+@moderation_bp.route("/warnings/me", methods=["GET"])
+@jwt_required()
+def list_my_warnings() -> tuple:
+    """
+    List current user's moderation warnings.
+    """
+
+    user_id = int(get_jwt_identity())
+
+    warnings = (
+        UserWarning.query
+        .filter_by(user_id=user_id)
+        .order_by(UserWarning.created_at.desc())
+        .limit(100)
+        .all()
+    )
+
+    return success_response("Moderasyon uyarıları getirildi.", {
+        "items": [serialize_warning(warning) for warning in warnings],
+        "count": len(warnings),
+        "unacknowledged_count": sum(1 for warning in warnings if not warning.is_acknowledged),
+    })
+
+
+@moderation_bp.route("/warnings/<int:warning_id>/acknowledge", methods=["PATCH", "POST"])
+@jwt_required()
+def acknowledge_warning(warning_id: int) -> tuple:
+    """
+    Mark current user's warning as acknowledged.
+    """
+
+    user_id = int(get_jwt_identity())
+
+    warning = UserWarning.query.get(warning_id)
+
+    if not warning:
+        return error_response("Uyarı bulunamadı.", status_code=404)
+
+    if int(warning.user_id) != user_id:
+        return error_response("Bu uyarı için yetkiniz yok.", status_code=403)
+
+    if not warning.is_acknowledged:
+        warning.is_acknowledged = True
+        warning.acknowledged_at = datetime.utcnow()
+        db.session.commit()
+
+    return success_response("Uyarı okundu olarak işaretlendi.", serialize_warning(warning))
+
+
 @moderation_bp.route("/admin/overview", methods=["GET"])
 @admin_required
 def admin_moderation_overview() -> tuple:
@@ -428,6 +552,7 @@ def admin_moderation_overview() -> tuple:
     hidden_comments = FeedComment.query.filter_by(is_active=False).count()
     inactive_communities = Community.query.filter_by(is_active=False).count()
     inactive_events = Event.query.filter_by(is_active=False).count()
+    unacknowledged_warnings = UserWarning.query.filter_by(is_acknowledged=False).count()
 
     latest_reports = (
         ModerationReport.query
@@ -456,6 +581,7 @@ def admin_moderation_overview() -> tuple:
             "hidden_comments": hidden_comments,
             "inactive_communities": inactive_communities,
             "inactive_events": inactive_events,
+            "unacknowledged_warnings": unacknowledged_warnings,
         },
         "latest_reports": [serialize_report(report) for report in latest_reports],
         "latest_actions": [serialize_action(action) for action in latest_actions],
@@ -529,7 +655,7 @@ def admin_list_reports() -> tuple:
 @admin_required
 def admin_get_report(report_id: int) -> tuple:
     """
-    Return report detail.
+    Return report detail with related action history.
     """
 
     report = ModerationReport.query.get(report_id)
@@ -677,6 +803,47 @@ def admin_search_users() -> tuple:
     })
 
 
+@moderation_bp.route("/admin/warnings", methods=["GET"])
+@admin_required
+def admin_list_warnings() -> tuple:
+    """
+    List user warnings for admin.
+    """
+
+    query = UserWarning.query
+
+    user_id = parse_int(request.args.get("user_id"))
+    acknowledged = normalize_text(request.args.get("acknowledged")).lower()
+
+    if user_id:
+        query = query.filter(UserWarning.user_id == user_id)
+
+    if acknowledged == "true":
+        query = query.filter(UserWarning.is_acknowledged.is_(True))
+
+    if acknowledged == "false":
+        query = query.filter(UserWarning.is_acknowledged.is_(False))
+
+    try:
+        limit = int(request.args.get("limit", 100))
+    except Exception:
+        limit = 100
+
+    limit = min(max(limit, 1), 200)
+
+    warnings = (
+        query
+        .order_by(UserWarning.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    return success_response("Kullanıcı uyarıları getirildi.", {
+        "items": [serialize_warning(warning) for warning in warnings],
+        "count": len(warnings),
+    })
+
+
 @moderation_bp.route("/admin/action", methods=["POST"])
 @admin_required
 def admin_take_action() -> tuple:
@@ -706,11 +873,28 @@ def admin_take_action() -> tuple:
     if not action_type:
         return error_response("Aksiyon tipi zorunludur.")
 
+    if action_type not in VALID_ADMIN_ACTIONS:
+        return error_response("Desteklenmeyen moderasyon aksiyonu.", status_code=400)
+
     if target_type not in VALID_TARGET_TYPES:
         return error_response("Geçersiz hedef tipi.")
 
     if not target_id:
         return error_response("Hedef ID zorunludur.")
+
+    report = None
+
+    if report_id:
+        report = ModerationReport.query.get(report_id)
+
+        if not report:
+            return error_response("İlişkili rapor bulunamadı.", status_code=404)
+
+        if report.target_type != target_type or report.target_id != target_id:
+            return error_response(
+                "Rapor hedefi ile aksiyon hedefi uyuşmuyor.",
+                status_code=400,
+            )
 
     target_object = get_target_object(target_type, target_id)
 
@@ -746,14 +930,11 @@ def admin_take_action() -> tuple:
         commit=False,
     )
 
-    if report_id:
-        report = ModerationReport.query.get(report_id)
-
-        if report:
-            report.status = "resolved"
-            report.admin_note = note or report.admin_note
-            report.reviewed_by = admin_user_id
-            report.reviewed_at = datetime.utcnow()
+    if report:
+        report.status = "resolved"
+        report.admin_note = note or reason or report.admin_note
+        report.reviewed_by = admin_user_id
+        report.reviewed_at = datetime.utcnow()
 
     db.session.commit()
 
@@ -800,6 +981,7 @@ def apply_admin_action(
         )
 
         db.session.add(warning)
+        db.session.flush()
 
         return {
             "success": True,
@@ -811,6 +993,12 @@ def apply_admin_action(
             return {
                 "success": False,
                 "message": "Kullanıcı pasifleştirme için hedef tipi user olmalıdır.",
+            }
+
+        if target_object.is_active is False:
+            return {
+                "success": False,
+                "message": "Kullanıcı zaten pasif durumda.",
             }
 
         target_object.is_active = False
@@ -827,6 +1015,12 @@ def apply_admin_action(
                 "message": "Kullanıcı aktifleştirme için hedef tipi user olmalıdır.",
             }
 
+        if target_object.is_active is True:
+            return {
+                "success": False,
+                "message": "Kullanıcı zaten aktif durumda.",
+            }
+
         target_object.is_active = True
 
         return {
@@ -839,6 +1033,12 @@ def apply_admin_action(
             return {
                 "success": False,
                 "message": "Gönderi gizleme için hedef tipi feed_post olmalıdır.",
+            }
+
+        if target_object.is_active is False:
+            return {
+                "success": False,
+                "message": "Gönderi zaten gizli.",
             }
 
         target_object.is_active = False
@@ -855,6 +1055,12 @@ def apply_admin_action(
                 "message": "Gönderi geri alma için hedef tipi feed_post olmalıdır.",
             }
 
+        if target_object.is_active is True:
+            return {
+                "success": False,
+                "message": "Gönderi zaten yayında.",
+            }
+
         target_object.is_active = True
 
         return {
@@ -867,6 +1073,12 @@ def apply_admin_action(
             return {
                 "success": False,
                 "message": "Yorum gizleme için hedef tipi feed_comment olmalıdır.",
+            }
+
+        if target_object.is_active is False:
+            return {
+                "success": False,
+                "message": "Yorum zaten gizli.",
             }
 
         target_object.is_active = False
@@ -883,6 +1095,12 @@ def apply_admin_action(
                 "message": "Yorum geri alma için hedef tipi feed_comment olmalıdır.",
             }
 
+        if target_object.is_active is True:
+            return {
+                "success": False,
+                "message": "Yorum zaten yayında.",
+            }
+
         target_object.is_active = True
 
         return {
@@ -895,6 +1113,12 @@ def apply_admin_action(
             return {
                 "success": False,
                 "message": "Topluluk pasifleştirme için hedef tipi community olmalıdır.",
+            }
+
+        if target_object.is_active is False:
+            return {
+                "success": False,
+                "message": "Topluluk zaten pasif durumda.",
             }
 
         target_object.is_active = False
@@ -911,6 +1135,12 @@ def apply_admin_action(
                 "message": "Topluluk aktifleştirme için hedef tipi community olmalıdır.",
             }
 
+        if target_object.is_active is True:
+            return {
+                "success": False,
+                "message": "Topluluk zaten aktif durumda.",
+            }
+
         target_object.is_active = True
 
         return {
@@ -923,6 +1153,12 @@ def apply_admin_action(
             return {
                 "success": False,
                 "message": "Etkinlik pasifleştirme için hedef tipi event olmalıdır.",
+            }
+
+        if target_object.is_active is False:
+            return {
+                "success": False,
+                "message": "Etkinlik zaten pasif durumda.",
             }
 
         target_object.is_active = False
@@ -939,6 +1175,12 @@ def apply_admin_action(
                 "message": "Etkinlik aktifleştirme için hedef tipi event olmalıdır.",
             }
 
+        if target_object.is_active is True:
+            return {
+                "success": False,
+                "message": "Etkinlik zaten aktif durumda.",
+            }
+
         target_object.is_active = True
 
         return {
@@ -951,6 +1193,12 @@ def apply_admin_action(
             return {
                 "success": False,
                 "message": "Sosyal oda kapatma için hedef tipi social_room olmalıdır.",
+            }
+
+        if getattr(target_object, "is_active", None) is False or getattr(target_object, "status", None) == "closed":
+            return {
+                "success": False,
+                "message": "Sosyal oda zaten kapalı.",
             }
 
         if hasattr(target_object, "is_active"):
@@ -1004,7 +1252,6 @@ def notify_target_user_after_action(
     }
 
     title = title_map.get(action_type, "Moderasyon aksiyonu uygulandı")
-
     message = note or reason or "FriendZone moderasyon ekibi tarafından bir aksiyon uygulandı."
 
     action_url = "notifications.html"

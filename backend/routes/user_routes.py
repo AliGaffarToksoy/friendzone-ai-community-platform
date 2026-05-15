@@ -59,32 +59,73 @@ def build_profile_image_url(filename: str | None) -> str | None:
     return f"/uploads/profile_images/{filename}"
 
 
-@user_bp.route("/profile/<int:user_id>", methods=["GET"])
-@jwt_required()
-def get_profile(user_id: int) -> tuple:
+def serialize_public_profile(user: User, is_own_profile: bool) -> dict:
     """
-    Return authenticated user's profile.
+    Serialize profile data for own/public profile view.
+
+    Own profile can use the full User.to_dict() response.
+    Public profile exposes only safe profile fields needed by the UI.
     """
 
-    current_user_id = int(get_jwt_identity())
-
-    if current_user_id != user_id:
-        return error_response("Bu profile erişim yetkiniz yok.", status_code=403)
-
-    user = User.query.get(user_id)
-
-    if not user:
-        return error_response("Kullanıcı bulunamadı.", status_code=404)
-
-    data = user.to_dict()
-    data["profile_image_url"] = build_profile_image_url(user.profile_image)
+    if is_own_profile:
+        data = user.to_dict()
+    else:
+        data = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "university": user.university,
+            "department": user.department,
+            "year": user.year,
+            "city": user.city,
+            "bio": user.bio,
+            "profile_image": user.profile_image,
+            "personality_type": user.personality_type,
+            "hobbies": user.hobbies or [],
+            "visibility_scope": user.visibility_scope,
+            "profile_visibility": user.profile_visibility,
+            "is_test_completed": user.is_test_completed,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+        }
 
     joined_count = CommunityMember.query.filter_by(
         user_id=user.id,
         is_active=True,
     ).count()
 
+    data["profile_image_url"] = build_profile_image_url(user.profile_image)
     data["joined_community_count"] = joined_count
+    data["is_own_profile"] = is_own_profile
+
+    return data
+
+
+@user_bp.route("/profile/<int:user_id>", methods=["GET"])
+@jwt_required()
+def get_profile(user_id: int) -> tuple:
+    """
+    Return a user's profile.
+
+    Rules:
+    - Authenticated user can always view own profile.
+    - Other users can view the profile only when profile_visibility is True.
+    """
+
+    current_user_id = int(get_jwt_identity())
+
+    user = User.query.get(user_id)
+
+    if not user or not user.is_active:
+        return error_response("Kullanıcı bulunamadı.", status_code=404)
+
+    is_own_profile = current_user_id == user_id
+
+    if not is_own_profile and not user.profile_visibility:
+        return error_response("Bu profil gizli.", status_code=403)
+
+    data = serialize_public_profile(user, is_own_profile)
 
     return success_response("Profil getirildi.", data)
 
@@ -137,6 +178,14 @@ def update_profile() -> tuple:
 
     result = user.to_dict()
     result["profile_image_url"] = build_profile_image_url(user.profile_image)
+    result["is_own_profile"] = True
+
+    joined_count = CommunityMember.query.filter_by(
+        user_id=user.id,
+        is_active=True,
+    ).count()
+
+    result["joined_community_count"] = joined_count
 
     return success_response("Profil güncellendi.", result)
 

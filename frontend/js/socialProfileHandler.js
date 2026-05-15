@@ -16,7 +16,7 @@ function isViewingOwnProfile() {
   const currentUserId = Number(localStorage.getItem('user_id'));
   const profileUserId = Number(getProfileUserId());
 
-  return currentUserId === profileUserId;
+  return Boolean(currentUserId && profileUserId && currentUserId === profileUserId);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -34,56 +34,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadGamificationSummary()
   ]);
 
-renderSocialScore();
-renderBadges();
-renderPointHistory();
-renderCertificates();
-bindCertificateModalEvents();
+  renderSocialScore();
+  renderBadges();
+  renderPointHistory();
+  renderCertificates();
+  bindCertificateModalEvents();
 });
 
 async function loadSocialProfile() {
-
   const currentUserId = localStorage.getItem('user_id');
-
   const profileUserId = getProfileUserId();
 
   if (!currentUserId) {
-
     logout();
-
     return;
-
   }
 
   if (!profileUserId) {
-
     showToast('Profil kullanıcısı bulunamadı.', 'error');
-
     renderFallbackProfile();
-
     return;
-
   }
 
   const response = await authFetch(`${API_BASE}/api/user/profile/${profileUserId}`);
 
   if (!response || !response.success) {
-    const fallbackResponse = await authFetch(`${API_BASE}/api/user/profile/${profileUserId}`);
-
-    if (!fallbackResponse || !fallbackResponse.success) {
-      showToast(
-        fallbackResponse?.message || response?.message || 'Profil bilgileri alınamadı.',
-        'error'
-      );
-
-      renderFallbackProfile();
-      return;
-    }
-
-    socialProfileUser = fallbackResponse.data;
-  } else {
-    socialProfileUser = response.data;
+    showToast(response?.message || 'Profil bilgileri alınamadı.', 'error');
+    renderFallbackProfile();
+    return;
   }
+
+  socialProfileUser = response.data;
 
   renderProfileHeader();
   renderAboutSection();
@@ -91,9 +72,15 @@ async function loadSocialProfile() {
 }
 
 async function loadProfileCommunities() {
-  const currentUserId = localStorage.getItem('user_id');
+  const profileUserId = getProfileUserId();
 
-  const response = await authFetch(`${API_BASE}/api/community/user/${currentUserId}`);
+  if (!profileUserId) {
+    socialProfileCommunities = [];
+    renderProfileCommunities();
+    return;
+  }
+
+  const response = await authFetch(`${API_BASE}/api/community/user/${profileUserId}`);
 
   if (!response || !response.success) {
     socialProfileCommunities = [];
@@ -106,6 +93,12 @@ async function loadProfileCommunities() {
 }
 
 async function loadProfilePosts() {
+  if (!isViewingOwnProfile()) {
+    socialProfilePosts = [];
+    renderProfilePosts();
+    return;
+  }
+
   const response = await authFetch(`${API_BASE}/api/feed?scope=me&limit=8`);
 
   if (!response || !response.success) {
@@ -119,6 +112,11 @@ async function loadProfilePosts() {
 }
 
 async function loadGamificationSummary() {
+  if (!isViewingOwnProfile()) {
+    socialGamification = null;
+    return;
+  }
+
   const response = await authFetch(`${API_BASE}/api/gamification/me`);
 
   if (!response || !response.success) {
@@ -336,6 +334,15 @@ function renderProfilePosts() {
 
   container.innerHTML = '';
 
+  if (!isViewingOwnProfile()) {
+    container.innerHTML = `
+      <div class="profile-empty-state">
+        Bu kullanıcının paylaşımları şu anda yalnızca ana akış üzerinden görüntülenebilir.
+      </div>
+    `;
+    return;
+  }
+
   if (!socialProfilePosts.length) {
     container.innerHTML = `
       <div class="profile-empty-state">
@@ -396,6 +403,13 @@ function renderSocialScore() {
   const progress = document.getElementById('socialScoreProgress');
   const level = document.getElementById('socialScoreLevel');
 
+  if (!isViewingOwnProfile()) {
+    if (scoreValue) scoreValue.textContent = '-';
+    if (progress) progress.style.width = '0%';
+    if (level) level.textContent = 'Sosyal skor yalnızca kendi profilinde görüntülenir.';
+    return;
+  }
+
   const points = socialGamification?.points || {};
   const totalPoints = Number(points.total_points || 0);
   const levelText = points.level || 'Başlangıç Seviyesi';
@@ -428,6 +442,15 @@ function renderBadges() {
   if (!container) return;
 
   container.innerHTML = '';
+
+  if (!isViewingOwnProfile()) {
+    container.innerHTML = `
+      <div class="profile-empty-state">
+        Rozetler yalnızca kendi profilinde görüntülenir.
+      </div>
+    `;
+    return;
+  }
 
   const badges = socialGamification?.badges || [];
 
@@ -481,6 +504,15 @@ function renderCertificates() {
   if (!container) return;
 
   container.innerHTML = '';
+
+  if (!isViewingOwnProfile()) {
+    container.innerHTML = `
+      <div class="profile-empty-state">
+        Sertifikalar yalnızca kendi profilinde görüntülenir.
+      </div>
+    `;
+    return;
+  }
 
   const certificates = socialGamification?.certificates || [];
 
@@ -720,13 +752,21 @@ function goToCertificateVerification() {
   window.location.href = `certificate-verify.html?number=${certificateNumber}`;
 }
 
-
 function renderPointHistory() {
   const container = document.getElementById('profilePointHistoryList');
 
   if (!container) return;
 
   container.innerHTML = '';
+
+  if (!isViewingOwnProfile()) {
+    container.innerHTML = `
+      <div class="profile-empty-state">
+        Puan geçmişi yalnızca kendi profilinde görüntülenir.
+      </div>
+    `;
+    return;
+  }
 
   const transactions = socialGamification?.recent_transactions || [];
 

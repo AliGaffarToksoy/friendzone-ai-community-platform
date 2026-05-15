@@ -5,6 +5,7 @@ let moderationOverviewCache = null;
 let moderationReportsCache = [];
 let moderationActionsCache = [];
 let moderationUsersCache = [];
+let moderationWarningsCache = [];
 let selectedReport = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -23,7 +24,9 @@ function showToast(message, type = 'info') {
   toast.textContent = message;
   toast.className = `toast ${type}`;
 
-  setTimeout(() => {
+  window.clearTimeout(showToast.timeoutId);
+
+  showToast.timeoutId = window.setTimeout(() => {
     toast.classList.add('hidden');
   }, 3600);
 }
@@ -87,21 +90,29 @@ async function adminFetch(url, options = {}) {
 function bindAdminModerationEvents() {
   const refreshBtn = document.getElementById('refreshModerationBtn');
   const clearAuthBtn = document.getElementById('clearAdminAuthBtn');
+
   const reportSearch = document.getElementById('reportSearchInput');
   const reportStatus = document.getElementById('reportStatusFilter');
   const reportSeverity = document.getElementById('reportSeverityFilter');
   const reportTarget = document.getElementById('reportTargetTypeFilter');
+
   const actionForm = document.getElementById('moderationActionForm');
   const reviewingBtn = document.getElementById('markReportReviewingBtn');
   const resolveBtn = document.getElementById('resolveReportBtn');
   const rejectBtn = document.getElementById('rejectReportBtn');
+
   const searchUsersBtn = document.getElementById('searchUsersBtn');
   const userSearchInput = document.getElementById('userSearchInput');
   const userStatusFilter = document.getElementById('userStatusFilter');
+
   const testReportBtn = document.getElementById('openCreateTestReportBtn');
 
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', loadModerationCenter);
+    refreshBtn.addEventListener('click', async () => {
+      await loadModerationCenter();
+      await loadUsers();
+      showToast('Moderasyon verileri yenilendi.', 'success');
+    });
   }
 
   if (clearAuthBtn) {
@@ -160,6 +171,7 @@ async function loadModerationCenter() {
     loadOverview(),
     loadReports(),
     loadActions(),
+    loadWarnings(),
   ]);
 }
 
@@ -187,9 +199,11 @@ function renderOverview(data) {
     Number(stats.hidden_posts || 0) +
     Number(stats.hidden_comments || 0) +
     Number(stats.inactive_communities || 0) +
-    Number(stats.inactive_events || 0);
+    Number(stats.inactive_events || 0) +
+    Number(stats.inactive_users || 0);
 
   setText('statHiddenContent', hiddenContent);
+  setText('statUnacknowledgedWarnings', stats.unacknowledged_warnings || 0);
 }
 
 async function loadReports() {
@@ -219,8 +233,8 @@ async function loadReports() {
   moderationReportsCache = response.data?.items || [];
   renderReports();
 
-  if (selectedReport) {
-    const updatedSelected = moderationReportsCache.find((item) => item.id === selectedReport.id);
+  if (selectedReport && selectedReport.id) {
+    const updatedSelected = moderationReportsCache.find((item) => Number(item.id) === Number(selectedReport.id));
 
     if (updatedSelected) {
       selectReport(updatedSelected.id);
@@ -236,9 +250,7 @@ function renderReports() {
     countText.textContent = `${moderationReportsCache.length} rapor`;
   }
 
-  if (!tbody) {
-    return;
-  }
+  if (!tbody) return;
 
   tbody.innerHTML = '';
 
@@ -255,14 +267,14 @@ function renderReports() {
     const target = report.target_summary || {};
     const tr = document.createElement('tr');
 
-    if (selectedReport && selectedReport.id === report.id) {
+    if (selectedReport && Number(selectedReport.id) === Number(report.id)) {
       tr.classList.add('active');
     }
 
     tr.innerHTML = `
       <td>#${escapeHtml(report.id)}</td>
       <td>
-        <span class="target-title">${escapeHtml(target.title || report.target_type)}</span>
+        <span class="target-title">${escapeHtml(target.title || getTargetTypeLabel(report.target_type))}</span>
         <span class="target-subtitle">${escapeHtml(target.subtitle || `${report.target_type}:${report.target_id}`)}</span>
       </td>
       <td>
@@ -273,9 +285,9 @@ function renderReports() {
         <span class="target-title">${escapeHtml(report.reported_user?.name || '-')}</span>
         <span class="target-subtitle">${escapeHtml(report.reported_user?.email || '')}</span>
       </td>
-      <td><span class="badge ${escapeHtml(report.status)}">${getStatusLabel(report.status)}</span></td>
-      <td><span class="badge ${escapeHtml(report.severity)}">${getSeverityLabel(report.severity)}</span></td>
-      <td>${formatDate(report.created_at)}</td>
+      <td><span class="badge ${escapeHtml(report.status)}">${escapeHtml(getStatusLabel(report.status))}</span></td>
+      <td><span class="badge ${escapeHtml(report.severity)}">${escapeHtml(getSeverityLabel(report.severity))}</span></td>
+      <td>${escapeHtml(formatDate(report.created_at))}</td>
     `;
 
     tr.addEventListener('click', () => {
@@ -289,13 +301,23 @@ function renderReports() {
 function selectReport(reportId) {
   const report = moderationReportsCache.find((item) => Number(item.id) === Number(reportId));
 
-  if (!report) {
-    return;
-  }
+  if (!report) return;
 
   selectedReport = report;
   renderReports();
   renderSelectedReport(report);
+  loadReportDetail(report.id);
+}
+
+async function loadReportDetail(reportId) {
+  const response = await adminFetch(`${API_BASE}/api/moderation/admin/reports/${reportId}`);
+
+  if (!response || !response.success) {
+    return;
+  }
+
+  selectedReport = response.data;
+  renderSelectedReport(selectedReport);
 }
 
 function renderSelectedReport(report) {
@@ -304,12 +326,13 @@ function renderSelectedReport(report) {
   const selectedText = document.getElementById('selectedReportText');
   const targetBox = document.getElementById('targetSummaryBox');
   const reportBox = document.getElementById('reportInfoBox');
+  const actionsBox = document.getElementById('reportActionsBox');
 
   if (empty) empty.classList.add('hidden');
   if (panel) panel.classList.remove('hidden');
 
   if (selectedText) {
-    selectedText.textContent = `#${report.id} · ${getStatusLabel(report.status)} · ${getSeverityLabel(report.severity)}`;
+    selectedText.textContent = `#${report.id || 'Manuel'} · ${getStatusLabel(report.status)} · ${getSeverityLabel(report.severity)}`;
   }
 
   const target = report.target_summary || {};
@@ -320,7 +343,7 @@ function renderSelectedReport(report) {
       ${createKv('Hedef ID', report.target_id)}
       ${createKv('Başlık', target.title || '-')}
       ${createKv('Aktif mi?', target.is_active === false ? 'Pasif / Gizli' : 'Aktif')}
-      ${createKv('Sahip ID', report.reported_user_id || '-')}
+      ${createKv('Sahip ID', report.reported_user_id || target.user_id || target.created_by || '-')}
       ${createKv('Sahip', report.reported_user?.name || '-')}
     `;
   }
@@ -330,23 +353,106 @@ function renderSelectedReport(report) {
       ${createKv('Rapor Nedeni', getReasonLabel(report.reason))}
       ${createKv('Durum', getStatusLabel(report.status))}
       ${createKv('Önem', getSeverityLabel(report.severity))}
-      ${createKv('Raporlayan', report.reporter?.name || '-')}
+      ${createKv('Raporlayan', report.reporter?.name || 'Admin Manuel İşlem')}
       ${createKv('Tarih', formatDate(report.created_at))}
+      ${createKv('Admin Notu', report.admin_note || '-')}
       ${createKv('Açıklama', report.description || '-')}
     `;
   }
 
-  preselectActionForReport(report);
+  if (actionsBox) {
+    renderReportActions(report.actions || []);
+  }
+
+  populateActionsForReport(report);
 }
 
-function preselectActionForReport(report) {
-  const select = document.getElementById('moderationActionType');
+function renderReportActions(actions) {
+  const actionsBox = document.getElementById('reportActionsBox');
 
-  if (!select) {
+  if (!actionsBox) {
     return;
   }
 
-  const map = {
+  if (!actions.length) {
+    actionsBox.innerHTML = `
+      <div class="detail-card">
+        <p>Bu rapor için henüz aksiyon uygulanmadı.</p>
+      </div>
+    `;
+    return;
+  }
+
+  actionsBox.innerHTML = actions.map((action) => `
+    <article class="action-log-item">
+      <strong>${escapeHtml(getActionTypeLabel(action.action_type))}</strong>
+      <small>
+        ${escapeHtml(getTargetTypeLabel(action.target_type))} #${escapeHtml(action.target_id)}
+        · ${escapeHtml(formatDate(action.created_at))}
+      </small>
+      <small style="margin-top:6px;">
+        ${escapeHtml(action.note || action.reason || 'Not yok')}
+      </small>
+    </article>
+  `).join('');
+}
+
+function populateActionsForReport(report) {
+  const select = document.getElementById('moderationActionType');
+
+  if (!select) return;
+
+  const actionsByTarget = {
+    user: [
+      ['warn_user', 'Kullanıcıyı Uyar'],
+      ['deactivate_user', 'Kullanıcıyı Pasifleştir'],
+      ['reactivate_user', 'Kullanıcıyı Aktifleştir'],
+    ],
+    feed_post: [
+      ['hide_feed_post', 'Feed Gönderisini Gizle'],
+      ['restore_feed_post', 'Feed Gönderisini Geri Al'],
+      ['warn_user', 'İçerik Sahibine Uyarı Gönder'],
+      ['deactivate_user', 'İçerik Sahibinin Hesabını Pasifleştir'],
+    ],
+    feed_comment: [
+      ['hide_feed_comment', 'Feed Yorumunu Gizle'],
+      ['restore_feed_comment', 'Feed Yorumunu Geri Al'],
+      ['warn_user', 'Yorum Sahibine Uyarı Gönder'],
+      ['deactivate_user', 'Yorum Sahibinin Hesabını Pasifleştir'],
+    ],
+    community: [
+      ['deactivate_community', 'Topluluğu Pasifleştir'],
+      ['reactivate_community', 'Topluluğu Aktifleştir'],
+      ['warn_user', 'Topluluk Sahibine Uyarı Gönder'],
+      ['deactivate_user', 'Topluluk Sahibinin Hesabını Pasifleştir'],
+    ],
+    event: [
+      ['deactivate_event', 'Etkinliği Pasifleştir'],
+      ['reactivate_event', 'Etkinliği Aktifleştir'],
+      ['warn_user', 'Etkinlik Sahibine Uyarı Gönder'],
+      ['deactivate_user', 'Etkinlik Sahibinin Hesabını Pasifleştir'],
+    ],
+    social_room: [
+      ['close_social_room', 'Sosyal Odayı Kapat'],
+      ['warn_user', 'Oda Sahibine Uyarı Gönder'],
+      ['deactivate_user', 'Oda Sahibinin Hesabını Pasifleştir'],
+    ],
+  };
+
+  const list = actionsByTarget[report.target_type] || [
+    ['warn_user', 'Kullanıcıyı Uyar'],
+  ];
+
+  select.innerHTML = `<option value="">Aksiyon seç</option>`;
+
+  list.forEach(([value, label]) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    select.appendChild(option);
+  });
+
+  const defaultMap = {
     user: 'warn_user',
     feed_post: 'hide_feed_post',
     feed_comment: 'hide_feed_comment',
@@ -355,14 +461,14 @@ function preselectActionForReport(report) {
     social_room: 'close_social_room',
   };
 
-  select.value = map[report.target_type] || '';
+  select.value = defaultMap[report.target_type] || '';
 }
 
 async function applyModerationAction(event) {
   event.preventDefault();
 
   if (!selectedReport) {
-    showToast('Önce bir rapor seçmelisin.', 'error');
+    showToast('Önce bir rapor veya kullanıcı seçmelisin.', 'error');
     return;
   }
 
@@ -386,20 +492,23 @@ async function applyModerationAction(event) {
     `Bu aksiyon uygulanacak:\n\n${getActionTypeLabel(actionType)}\nHedef: ${getTargetTypeLabel(actionTarget.target_type)} #${actionTarget.target_id}\n\nDevam edilsin mi?`
   );
 
-  if (!confirmed) {
-    return;
+  if (!confirmed) return;
+
+  const payload = {
+    action_type: actionType,
+    target_type: actionTarget.target_type,
+    target_id: actionTarget.target_id,
+    reason: reason || selectedReport.reason || 'manual_admin_review',
+    note: note || selectedReport.description || '',
+  };
+
+  if (selectedReport.id) {
+    payload.report_id = selectedReport.id;
   }
 
   const response = await adminFetch(`${API_BASE}/api/moderation/admin/action`, {
     method: 'POST',
-    body: JSON.stringify({
-      action_type: actionType,
-      target_type: actionTarget.target_type,
-      target_id: actionTarget.target_id,
-      report_id: selectedReport.id,
-      reason: reason || selectedReport.reason,
-      note: note || selectedReport.description || '',
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response || !response.success) {
@@ -412,15 +521,22 @@ async function applyModerationAction(event) {
   clearActionForm();
 
   await loadModerationCenter();
+  await loadUsers();
+
+  if (selectedReport?.id) {
+    await loadReportDetail(selectedReport.id);
+  }
 }
 
 function resolveActionTarget(report, actionType) {
   if (actionType.includes('user')) {
-    const targetUserId = report.reported_user_id || report.target_id;
+    const targetUserId =
+      report.reported_user_id ||
+      report.target_summary?.user_id ||
+      report.target_summary?.created_by ||
+      report.target_id;
 
-    if (!targetUserId) {
-      return null;
-    }
+    if (!targetUserId) return null;
 
     return {
       target_type: 'user',
@@ -470,8 +586,8 @@ function resolveActionTarget(report, actionType) {
 }
 
 async function updateSelectedReportStatus(status) {
-  if (!selectedReport) {
-    showToast('Önce bir rapor seçmelisin.', 'error');
+  if (!selectedReport || !selectedReport.id) {
+    showToast('Önce kayıtlı bir rapor seçmelisin.', 'error');
     return;
   }
 
@@ -493,6 +609,7 @@ async function updateSelectedReportStatus(status) {
   showToast(`Rapor durumu güncellendi: ${getStatusLabel(status)}`, 'success');
 
   await loadModerationCenter();
+  await loadReportDetail(selectedReport.id);
 }
 
 async function loadActions() {
@@ -516,9 +633,7 @@ function renderActions() {
     countText.textContent = `${moderationActionsCache.length} aksiyon`;
   }
 
-  if (!list) {
-    return;
-  }
+  if (!list) return;
 
   list.innerHTML = '';
 
@@ -541,8 +656,69 @@ function renderActions() {
         ${escapeHtml(getTargetTypeLabel(action.target_type))} #${escapeHtml(action.target_id)}
         · ${escapeHtml(formatDate(action.created_at))}
       </small>
-      <small style="display:block;margin-top:6px;">
+      <small style="margin-top:6px;">
         ${escapeHtml(action.note || action.reason || 'Not yok')}
+      </small>
+    `;
+
+    list.appendChild(item);
+  });
+}
+
+async function loadWarnings() {
+  const response = await adminFetch(`${API_BASE}/api/moderation/admin/warnings?limit=50`);
+
+  if (!response || !response.success) {
+    moderationWarningsCache = [];
+    renderWarnings();
+    return;
+  }
+
+  moderationWarningsCache = response.data?.items || [];
+  renderWarnings();
+}
+
+function renderWarnings() {
+  const list = document.getElementById('warningsList');
+  const countText = document.getElementById('warningsCountText');
+
+  if (countText) {
+    const unacknowledged = moderationWarningsCache.filter((warning) => !warning.is_acknowledged).length;
+    countText.textContent = `${moderationWarningsCache.length} uyarı · ${unacknowledged} okunmamış`;
+  }
+
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  if (!moderationWarningsCache.length) {
+    list.innerHTML = `
+      <div class="detail-card">
+        <p>Henüz kullanıcı uyarısı yok.</p>
+      </div>
+    `;
+    return;
+  }
+
+  moderationWarningsCache.forEach((warning) => {
+    const item = document.createElement('article');
+    item.className = warning.is_acknowledged
+      ? 'warning-log-item read'
+      : 'warning-log-item unread';
+
+    item.innerHTML = `
+      <strong>${escapeHtml(warning.title || 'Moderasyon uyarısı')}</strong>
+      <small>
+        ${escapeHtml(warning.user?.name || `Kullanıcı #${warning.user_id}`)}
+        · ${escapeHtml(warning.user?.email || '')}
+      </small>
+      <small style="margin-top:6px;">
+        ${escapeHtml(warning.message || '-')}
+      </small>
+      <small style="margin-top:6px;">
+        ${escapeHtml(getSeverityLabel(warning.severity))}
+        · ${escapeHtml(warning.is_acknowledged ? 'Okundu' : 'Okunmadı')}
+        · ${escapeHtml(formatDate(warning.created_at))}
       </small>
     `;
 
@@ -575,9 +751,7 @@ async function loadUsers() {
 function renderUsers() {
   const list = document.getElementById('usersList');
 
-  if (!list) {
-    return;
-  }
+  if (!list) return;
 
   list.innerHTML = '';
 
@@ -592,14 +766,69 @@ function renderUsers() {
 
   moderationUsersCache.forEach((user) => {
     const card = document.createElement('article');
-    card.className = 'user-card';
+    card.className = 'user-card moderation-user-card';
+
+    const statusLabel = user.is_active ? 'Aktif' : 'Pasif';
+    const statusClass = user.is_active ? 'active' : 'passive';
 
     card.innerHTML = `
-      <strong>${escapeHtml(user.name || '-')}</strong>
-      <span>${escapeHtml(user.email || '')}</span>
-      <span>${escapeHtml(user.university || '')}</span>
-      <span>Durum: ${user.is_active ? 'Aktif' : 'Pasif'}</span>
+      <div class="moderation-user-card-main">
+        <div class="moderation-user-avatar">${escapeHtml(getInitials(user.name))}</div>
+
+        <div class="moderation-user-content">
+          <div class="moderation-user-title-row">
+            <strong>${escapeHtml(user.name || '-')}</strong>
+            <span class="status-badge ${statusClass}">${statusLabel}</span>
+          </div>
+
+          <span class="moderation-user-email">${escapeHtml(user.email || '')}</span>
+
+          <div class="moderation-user-meta">
+            <span>${escapeHtml(user.university || 'Üniversite yok')}</span>
+            <span>${escapeHtml(user.department || 'Bölüm yok')}</span>
+            <span>#${escapeHtml(user.id)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="moderation-user-actions">
+        <button type="button" data-user-action="warn_user">
+          Uyar
+        </button>
+
+        ${
+          user.is_active
+            ? `<button type="button" class="danger" data-user-action="deactivate_user">
+                Pasifleştir
+              </button>`
+            : `<button type="button" class="success" data-user-action="reactivate_user">
+                Aktifleştir
+              </button>`
+        }
+
+        <button type="button" data-user-action="load_panel">
+          Panele Yükle
+        </button>
+      </div>
     `;
+
+    const actionButtons = card.querySelectorAll('[data-user-action]');
+
+    actionButtons.forEach((button) => {
+      button.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const actionType = button.dataset.userAction;
+
+        if (actionType === 'load_panel') {
+          selectUserForQuickAction(user);
+          return;
+        }
+
+        await applyUserQuickAction(user, actionType);
+      });
+    });
 
     card.addEventListener('click', () => {
       selectUserForQuickAction(user);
@@ -631,7 +860,59 @@ function selectUserForQuickAction(user) {
   };
 
   renderSelectedReport(selectedReport);
-  showToast(`${user.name} aksiyon paneline yüklendi.`, 'success');
+  showToast(`${user.name || user.email} aksiyon paneline yüklendi.`, 'success');
+}
+
+async function applyUserQuickAction(user, actionType) {
+  if (!user || !user.id) {
+    showToast('Kullanıcı seçilemedi.', 'error');
+    return;
+  }
+
+  const actionLabel = getActionTypeLabel(actionType);
+
+  const defaultReasonMap = {
+    warn_user: 'Admin kullanıcı yönetimi üzerinden uyarı.',
+    deactivate_user: 'Admin kullanıcı yönetimi üzerinden pasifleştirme.',
+    reactivate_user: 'Admin kullanıcı yönetimi üzerinden yeniden aktifleştirme.',
+  };
+
+  const defaultNoteMap = {
+    warn_user: 'Lütfen FriendZone topluluk kurallarına uygun davran.',
+    deactivate_user: 'Hesabın moderasyon tarafından geçici olarak pasifleştirildi.',
+    reactivate_user: 'Hesabın yeniden aktifleştirildi.',
+  };
+
+  const confirmed = window.confirm(
+    `${actionLabel} aksiyonu uygulanacak.\n\nKullanıcı: ${user.name || user.email || `#${user.id}`}\n\nDevam edilsin mi?`
+  );
+
+  if (!confirmed) return;
+
+  const response = await adminFetch(`${API_BASE}/api/moderation/admin/action`, {
+    method: 'POST',
+    body: JSON.stringify({
+      action_type: actionType,
+      target_type: 'user',
+      target_id: user.id,
+      reason: defaultReasonMap[actionType] || 'Admin kullanıcı yönetimi aksiyonu.',
+      note: defaultNoteMap[actionType] || '',
+    }),
+  });
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Kullanıcı aksiyonu uygulanamadı.', 'error');
+    return;
+  }
+
+  showToast(`${actionLabel} başarıyla uygulandı.`, 'success');
+
+  await Promise.all([
+    loadOverview(),
+    loadActions(),
+    loadWarnings(),
+    loadUsers(),
+  ]);
 }
 
 function clearActionForm() {
@@ -645,7 +926,7 @@ function clearActionForm() {
 }
 
 function createQuickTestReportHint() {
-  showToast('Test raporu için terminalden /api/moderation/reports endpointini kullanabilirsin. Backend testin zaten başarılı.', 'success');
+  showToast('Test raporu oluşturmak için kullanıcı tarafında Rapor Et butonunu kullanabilir veya /api/moderation/reports endpointini terminalden çağırabilirsin.', 'success');
 }
 
 function setText(id, value) {
@@ -663,6 +944,18 @@ function createKv(label, value) {
       <strong>${escapeHtml(value === null || value === undefined ? '-' : value)}</strong>
     </div>
   `;
+}
+
+function getInitials(name) {
+  if (!name) return 'FZ';
+
+  return String(name)
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 function getStatusLabel(status) {
@@ -743,9 +1036,7 @@ function getActionTypeLabel(type) {
 }
 
 function formatDate(value) {
-  if (!value) {
-    return '-';
-  }
+  if (!value) return '-';
 
   const date = new Date(value);
 

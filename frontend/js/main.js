@@ -4,6 +4,9 @@ let notificationDropdownCache = [];
 let notificationDropdownOpen = false;
 const NOTIFICATION_DROPDOWN_DISMISS_KEY = 'friendzone_notification_dropdown_dismiss_signature';
 
+let moderationWarningsCache = [];
+let moderationWarningModalOpen = false;
+
 function showToast(message, type = 'info') {
   const toast = document.getElementById('toast');
 
@@ -15,7 +18,9 @@ function showToast(message, type = 'info') {
   toast.textContent = message;
   toast.className = `toast ${type}`;
 
-  setTimeout(() => {
+  window.clearTimeout(showToast.timeoutId);
+
+  showToast.timeoutId = window.setTimeout(() => {
     toast.classList.add('hidden');
   }, 3500);
 }
@@ -42,16 +47,36 @@ async function authFetch(url, options = {}) {
 
     const data = await response.json().catch(() => null);
 
-    if (response.status === 401) {
+    const message = String(data?.message || data?.msg || '').toLowerCase();
+
+    const isSessionExpired = response.status === 401;
+
+    const isAccountBlocked =
+      response.status === 403 &&
+      (
+        message.includes('devre dışı') ||
+        message.includes('erişim yetkiniz') ||
+        message.includes('yetkiniz kaldırılmıştır') ||
+        message.includes('disabled') ||
+        message.includes('forbidden')
+      );
+
+    if (isSessionExpired || isAccountBlocked) {
       localStorage.removeItem('token');
       localStorage.removeItem('user_id');
+      localStorage.removeItem('friendzone_user');
+      sessionStorage.removeItem(NOTIFICATION_DROPDOWN_DISMISS_KEY);
 
       if (!window.location.pathname.endsWith('login.html')) {
-        showToast('Oturum süren doldu. Tekrar giriş yapmalısın.', 'error');
+        const toastMessage = isAccountBlocked
+          ? 'Hesabın devre dışı bırakıldı veya erişim yetkin kaldırıldı. Lütfen yöneticiyle iletişime geç.'
+          : 'Oturum süren doldu. Tekrar giriş yapmalısın.';
+
+        showToast(toastMessage, 'error');
 
         setTimeout(() => {
           window.location.href = 'login.html';
-        }, 800);
+        }, 1000);
       }
 
       return data;
@@ -68,7 +93,9 @@ async function authFetch(url, options = {}) {
 function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('user_id');
+  localStorage.removeItem('friendzone_user');
   sessionStorage.removeItem('friendzone_admin_auth');
+  sessionStorage.removeItem(NOTIFICATION_DROPDOWN_DISMISS_KEY);
   window.location.href = 'login.html';
 }
 
@@ -84,6 +111,7 @@ function isAuthPage() {
 
   return [
     'login.html',
+    'signup.html',
     'register.html',
     'index.html',
     '',
@@ -217,8 +245,6 @@ function hasNewNotificationSinceDismiss() {
 
   return dismissedSignature !== currentSignature;
 }
-
-
 
 async function refreshNotificationBadge() {
   const token = localStorage.getItem('token');
@@ -485,10 +511,10 @@ function bindNotificationDropdownEvents() {
   notificationLink.addEventListener('click', toggleNotificationDropdown);
 
   notificationLink.addEventListener('mouseenter', () => {
-  if (window.innerWidth >= 900 && hasNewNotificationSinceDismiss()) {
-    openNotificationDropdown(false);
-  }
-});
+    if (window.innerWidth >= 900 && hasNewNotificationSinceDismiss()) {
+      openNotificationDropdown(false);
+    }
+  });
 
   const dropdown = ensureNotificationDropdown();
 
@@ -502,17 +528,17 @@ function bindNotificationDropdownEvents() {
     });
 
     dropdown.addEventListener('mouseleave', () => {
-  if (window.innerWidth >= 900) {
-    setTimeout(() => {
-      closeNotificationDropdown(false);
-    }, 220);
-  }
-});
+      if (window.innerWidth >= 900) {
+        setTimeout(() => {
+          closeNotificationDropdown(false);
+        }, 220);
+      }
+    });
   }
 
   document.addEventListener('click', () => {
-  closeNotificationDropdown(false);
-});
+    closeNotificationDropdown(false);
+  });
 
   window.addEventListener('resize', () => {
     if (notificationDropdownOpen) {
@@ -545,6 +571,7 @@ function getMiniNotificationIcon(type) {
     social_room_joined: '🎧',
     feed_post_created: '💡',
     feed_comment_created: '💬',
+    moderation_action: '🛡️',
     system: '🔔',
   };
 
@@ -577,6 +604,196 @@ function formatMiniNotificationDate(value) {
     day: '2-digit',
     month: 'short',
   });
+}
+
+/* =========================================================
+   Moderation Warnings - User Facing
+   ========================================================= */
+
+async function loadMyModerationWarnings() {
+  const token = localStorage.getItem('token');
+
+  if (!token || isAuthPage()) {
+    return;
+  }
+
+  const response = await authFetch(`${API_BASE}/api/moderation/warnings/me`);
+
+  if (!response || !response.success) {
+    return;
+  }
+
+  const payload = response.data || {};
+  moderationWarningsCache = payload.items || [];
+
+  const unreadWarnings = moderationWarningsCache.filter((warning) => !warning.is_acknowledged);
+
+  if (unreadWarnings.length) {
+    openModerationWarningModal(unreadWarnings[0]);
+  }
+}
+
+function ensureModerationWarningModal() {
+  let modal = document.getElementById('moderationWarningModal');
+
+  if (modal) {
+    return modal;
+  }
+
+  modal = document.createElement('div');
+  modal.id = 'moderationWarningModal';
+  modal.className = 'moderation-warning-overlay hidden';
+
+  modal.innerHTML = `
+    <div class="moderation-warning-card" role="dialog" aria-modal="true" aria-labelledby="moderationWarningTitle">
+      <div class="moderation-warning-icon">🛡️</div>
+
+      <div class="moderation-warning-content">
+        <p class="moderation-warning-eyebrow">Moderasyon Uyarısı</p>
+        <h2 id="moderationWarningTitle">FriendZone moderasyon uyarısı</h2>
+        <p id="moderationWarningMessage">
+          Lütfen topluluk kurallarına uygun davran.
+        </p>
+
+        <div class="moderation-warning-meta">
+          <span id="moderationWarningSeverity">Seviye: Orta</span>
+          <span id="moderationWarningDate">Tarih yok</span>
+        </div>
+      </div>
+
+      <div class="moderation-warning-actions">
+        <button id="moderationWarningAcknowledgeBtn" type="button">
+          Okudum ve Anladım
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const acknowledgeBtn = document.getElementById('moderationWarningAcknowledgeBtn');
+
+  if (acknowledgeBtn) {
+    acknowledgeBtn.addEventListener('click', acknowledgeCurrentModerationWarning);
+  }
+
+  return modal;
+}
+
+function openModerationWarningModal(warning) {
+  if (!warning || moderationWarningModalOpen) {
+    return;
+  }
+
+  const modal = ensureModerationWarningModal();
+
+  modal.dataset.warningId = String(warning.id);
+
+  const title = document.getElementById('moderationWarningTitle');
+  const message = document.getElementById('moderationWarningMessage');
+  const severity = document.getElementById('moderationWarningSeverity');
+  const date = document.getElementById('moderationWarningDate');
+
+  if (title) {
+    title.textContent = warning.title || 'FriendZone moderasyon uyarısı';
+  }
+
+  if (message) {
+    message.textContent = warning.message || 'Lütfen topluluk kurallarına uygun davran.';
+  }
+
+  if (severity) {
+    severity.textContent = `Seviye: ${getModerationWarningSeverityLabel(warning.severity)}`;
+  }
+
+  if (date) {
+    date.textContent = formatMiniNotificationDate(warning.created_at);
+  }
+
+  moderationWarningModalOpen = true;
+  modal.classList.remove('hidden');
+}
+
+function closeModerationWarningModal() {
+  const modal = document.getElementById('moderationWarningModal');
+
+  if (!modal) {
+    return;
+  }
+
+  moderationWarningModalOpen = false;
+  modal.classList.add('hidden');
+  modal.dataset.warningId = '';
+}
+
+async function acknowledgeCurrentModerationWarning() {
+  const modal = document.getElementById('moderationWarningModal');
+
+  if (!modal) {
+    return;
+  }
+
+  const warningId = Number(modal.dataset.warningId);
+
+  if (!warningId) {
+    closeModerationWarningModal();
+    return;
+  }
+
+  const button = document.getElementById('moderationWarningAcknowledgeBtn');
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'İşaretleniyor...';
+  }
+
+  const response = await authFetch(`${API_BASE}/api/moderation/warnings/${warningId}/acknowledge`, {
+    method: 'PATCH',
+  });
+
+  if (button) {
+    button.disabled = false;
+    button.textContent = 'Okudum ve Anladım';
+  }
+
+  if (!response || !response.success) {
+    showToast(response?.message || 'Uyarı okundu olarak işaretlenemedi.', 'error');
+    return;
+  }
+
+  moderationWarningsCache = moderationWarningsCache.map((warning) => {
+    if (Number(warning.id) === warningId) {
+      return {
+        ...warning,
+        is_acknowledged: true,
+        acknowledged_at: new Date().toISOString(),
+      };
+    }
+
+    return warning;
+  });
+
+  closeModerationWarningModal();
+  showToast('Moderasyon uyarısı okundu olarak işaretlendi.', 'success');
+
+  const nextUnreadWarning = moderationWarningsCache.find((warning) => !warning.is_acknowledged);
+
+  if (nextUnreadWarning) {
+    setTimeout(() => {
+      openModerationWarningModal(nextUnreadWarning);
+    }, 450);
+  }
+}
+
+function getModerationWarningSeverityLabel(severity) {
+  const map = {
+    low: 'Düşük',
+    medium: 'Orta',
+    high: 'Yüksek',
+    critical: 'Kritik',
+  };
+
+  return map[severity] || severity || 'Orta';
 }
 
 function injectNotificationBadgeStyles() {
@@ -766,11 +983,127 @@ function injectNotificationBadgeStyles() {
       background: rgba(99, 102, 241, 0.26);
     }
 
+    .moderation-warning-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(10px);
+    }
+
+    .moderation-warning-overlay.hidden {
+      display: none;
+    }
+
+    .moderation-warning-card {
+      width: min(100%, 520px);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      border-radius: 28px;
+      padding: 24px;
+      background:
+        radial-gradient(circle at top left, rgba(245, 158, 11, 0.14), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.16), transparent 34%),
+        rgba(15, 23, 42, 0.98);
+      box-shadow:
+        0 34px 100px rgba(2, 6, 23, 0.58),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      color: #f8fafc;
+    }
+
+    .moderation-warning-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      font-size: 26px;
+    }
+
+    .moderation-warning-eyebrow {
+      margin: 0 0 8px;
+      color: #fbbf24;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .moderation-warning-content h2 {
+      margin: 0 0 10px;
+      color: #ffffff;
+      font-size: 26px;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+    }
+
+    .moderation-warning-content p {
+      color: rgba(226, 232, 240, 0.84);
+      line-height: 1.65;
+    }
+
+    .moderation-warning-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .moderation-warning-meta span {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0 10px;
+      background: rgba(148, 163, 184, 0.12);
+      color: rgba(226, 232, 240, 0.82);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .moderation-warning-actions {
+      margin-top: 22px;
+    }
+
+    #moderationWarningAcknowledgeBtn {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid rgba(245, 158, 11, 0.34);
+      border-radius: 16px;
+      background: rgba(245, 158, 11, 0.18);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    #moderationWarningAcknowledgeBtn:hover {
+      background: rgba(245, 158, 11, 0.26);
+    }
+
+    #moderationWarningAcknowledgeBtn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 680px) {
       .notification-mini-dropdown {
         left: 12px !important;
         right: 12px !important;
         width: auto !important;
+      }
+
+      .moderation-warning-card {
+        padding: 20px;
+        border-radius: 24px;
+      }
+
+      .moderation-warning-content h2 {
+        font-size: 22px;
       }
     }
   `;
@@ -793,11 +1126,19 @@ document.addEventListener('DOMContentLoaded', () => {
     ensureNotificationDropdown();
     bindNotificationDropdownEvents();
     refreshNotificationBadge();
+    loadMyModerationWarnings();
 
-    window.addEventListener('focus', refreshNotificationBadge);
+    window.addEventListener('focus', () => {
+      refreshNotificationBadge();
+      loadMyModerationWarnings();
+    });
 
     setInterval(() => {
       refreshNotificationBadge();
     }, 60000);
+
+    setInterval(() => {
+      loadMyModerationWarnings();
+    }, 90000);
   }
 });

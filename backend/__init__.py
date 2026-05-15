@@ -12,6 +12,7 @@ from flask import Flask, send_from_directory
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_jwt_extended import get_jwt_identity
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
 
@@ -25,6 +26,7 @@ from .routes.certificate_routes import certificate_bp
 from .routes.social_room_routes import social_room_bp
 from .routes.notification_routes import notification_bp
 from .routes.moderation_routes import moderation_bp
+from backend.utils.helpers import error_response
 
 bcrypt = Bcrypt()
 jwt = JWTManager()
@@ -81,6 +83,85 @@ def create_app() -> Flask:
     db.init_app(app)
     bcrypt.init_app(app)
     jwt.init_app(app)
+
+    @jwt.user_lookup_loader
+    def user_lookup_callback(_jwt_header, jwt_data):
+        from backend.models.user_model import User
+
+        identity = jwt_data.get("sub")
+
+        if identity is None:
+            return None
+
+        try:
+            return User.query.get(int(identity))
+        except Exception:
+            return None
+
+    @jwt.token_in_blocklist_loader
+    def check_if_token_is_revoked(_jwt_header, jwt_data):
+        from backend.models.user_model import User
+
+        identity = jwt_data.get("sub")
+
+        if identity is None:
+            return True
+
+        try:
+            user = User.query.get(int(identity))
+        except Exception:
+            return True
+
+        return not user or not user.is_active
+
+    @jwt.revoked_token_loader
+    def revoked_token_callback(_jwt_header, _jwt_data):
+        return error_response(
+            "Hesabınız devre dışı bırakılmıştır veya erişim yetkiniz kaldırılmıştır.",
+            status_code=403,
+        )
+
+    @jwt.token_verification_loader
+    def verify_user_is_active(jwt_header: dict, jwt_data: dict) -> bool:
+        """
+        Reject valid JWT tokens if the user is no longer active.
+
+        This protects the API when an admin deactivates a user after
+        the user already has an access token.
+        """
+
+        user_id = jwt_data.get("sub")
+
+        if not user_id:
+            return False
+
+        try:
+            user_id_int = int(user_id)
+        except Exception:
+            return False
+
+        from backend.models.user_model import User
+
+        user = User.query.get(user_id_int)
+
+        if not user:
+            return False
+
+        return bool(user.is_active)
+
+    @jwt.token_verification_failed_loader
+    def token_verification_failed(jwt_header: dict, jwt_data: dict):
+        """
+        Return a clear API response when token verification fails.
+        """
+
+        from backend.utils.helpers import error_response
+
+        return error_response(
+            "Hesabınız devre dışı bırakılmıştır veya erişim yetkiniz kaldırılmıştır.",
+            status_code=403,
+        )
+
     migrate.init_app(app, db)
 
     socketio.init_app(
