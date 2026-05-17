@@ -327,6 +327,7 @@ def similar_users(user_id: int) -> tuple:
         if not target_user.profile_visibility:
             continue
 
+
         data.append({
             "id": target_user.id,
             "name": target_user.name,

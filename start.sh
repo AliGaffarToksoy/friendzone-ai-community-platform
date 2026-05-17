@@ -11,7 +11,9 @@ until nc -z postgres 5432; do
   sleep 2
 done
 
+
 echo "PostgreSQL hazır."
+
 
 export FLASK_APP=backend.app
 
