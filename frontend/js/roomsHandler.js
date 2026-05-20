@@ -346,13 +346,15 @@ function createRoomCard(room) {
 
   actions.appendChild(joinBtn);
 
-  if (room.meeting_url) {
-    const meetingBtn = document.createElement('a');
+  if (isLiveRoomCapable(room)) {
+    const meetingBtn = document.createElement('button');
+    meetingBtn.type = 'button';
     meetingBtn.className = 'room-action-button secondary';
-    meetingBtn.href = room.meeting_url;
-    meetingBtn.target = '_blank';
-    meetingBtn.rel = 'noopener noreferrer';
     meetingBtn.textContent = getMeetingButtonText(room.meeting_provider);
+
+    meetingBtn.addEventListener('click', async () => {
+      await openLiveRoom(room);
+    });
 
     actions.appendChild(meetingBtn);
   }
@@ -485,13 +487,15 @@ function renderRoomDetail(room) {
 
   actions.appendChild(joinBtn);
 
-  if (room.meeting_url) {
-    const meetingBtn = document.createElement('a');
+  if (isLiveRoomCapable(room)) {
+    const meetingBtn = document.createElement('button');
+    meetingBtn.type = 'button';
     meetingBtn.className = 'room-detail-button secondary';
-    meetingBtn.href = room.meeting_url;
-    meetingBtn.target = '_blank';
-    meetingBtn.rel = 'noopener noreferrer';
     meetingBtn.textContent = getMeetingButtonText(room.meeting_provider);
+
+    meetingBtn.addEventListener('click', async () => {
+      await openLiveRoom(room);
+    });
 
     actions.appendChild(meetingBtn);
   }
@@ -568,9 +572,8 @@ async function createRoom(event) {
     return;
   }
 
-  if (['event', 'meet', 'voice'].includes(payload.room_type) && !payload.meeting_url) {
-    showToast('Bu oda tipi için toplantı linki girilmelidir.', 'error');
-    return;
+  if (['event', 'meet', 'voice'].includes(payload.room_type) && !payload.meeting_provider) {
+    payload.meeting_provider = 'jitsi';
   }
 
   const originalText = submitBtn ? submitBtn.textContent : 'Odayı Oluştur';
@@ -805,8 +808,7 @@ function updateSmartRoomFields() {
   }
 
   if (showMeeting && meetingUrl && !meetingUrl.value) {
-    const randomSlug = `friendzone-room-${Date.now()}`;
-    meetingUrl.value = `https://meet.jit.si/${randomSlug}`;
+    meetingUrl.placeholder = 'Boş bırakılırsa FriendZone otomatik güvenli Jitsi odası oluşturur.';
   }
 
   if (!showMeeting && provider) {
@@ -823,6 +825,50 @@ function syncCategoryCardsWithType(roomType) {
     const buttonType = button.dataset.roomType || '';
     button.classList.toggle('active', buttonType === (roomType || ''));
   });
+}
+
+function isSafeMeetingUrl(value) {
+  if (!value) return false;
+
+  const text = String(value).trim();
+
+  if (!text) return false;
+
+  if (['none', 'null', 'undefined', 'false', '#'].includes(text.toLowerCase())) {
+    return false;
+  }
+
+  return text.startsWith('https://') || text.startsWith('http://');
+}
+
+function isLiveRoomCapable(room) {
+  if (!room) return false;
+
+  if (['event', 'meet', 'voice'].includes(room.room_type)) {
+    return true;
+  }
+
+  return Boolean(room.meeting_provider || isSafeMeetingUrl(room.meeting_url));
+}
+
+async function openLiveRoom(room) {
+  if (!room || !room.id) {
+    showToast('Oda bilgisi bulunamadı.', 'error');
+    return;
+  }
+
+  if (room.viewer_status !== 'joined') {
+    const response = await authFetch(`${API_BASE}/api/rooms/${room.id}/join`, {
+      method: 'POST'
+    });
+
+    if (!response || !response.success) {
+      showToast(response?.message || 'Canlı odaya katılamadınız.', 'error');
+      return;
+    }
+  }
+
+  window.location.href = `live-room.html?id=${encodeURIComponent(room.id)}`;
 }
 
 function getInputValue(id) {

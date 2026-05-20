@@ -712,3 +712,92 @@
     display: grid;
   }
 }
+/* =========================================================
+   Page-specific sidebar scroll safety
+   ========================================================= */
+.events-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+}
+
+.events-sidebar::-webkit-scrollbar {
+  width: 7px;
+}
+
+.events-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.events-sidebar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.32);
+}
+
+.events-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.52);
+}
+
+@media (max-width: 980px) {
+  .events-sidebar {
+    position: relative;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* =========================================================
+   Events Page Layout Alignment Fix
+   Prevents excessive horizontal shift on desktop.
+   ========================================================= */
+
+.events-page,
+.events-shell,
+.events-layout,
+.events-app {
+  width: 100%;
+  max-width: 100%;
+}
+
+.events-main {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+@media (min-width: 981px) {
+  .events-shell,
+  .events-layout,
+  .events-app {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .events-sidebar {
+    width: 280px;
+    min-width: 280px;
+  }
+
+  .events-main {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 980px) {
+  .events-main {
+    max-width: 100%;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
