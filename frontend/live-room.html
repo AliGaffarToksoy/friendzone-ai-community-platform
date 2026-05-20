@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Canlı Oda - FriendZone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/live-room.css" />
+</head>
+
+<body>
+  <main class="live-room-page">
+    <section class="live-room-topbar">
+      <div>
+        <p class="live-room-eyebrow">FriendZone Live</p>
+        <h1 id="liveRoomTitle">Canlı oda yükleniyor...</h1>
+        <p id="liveRoomSubtitle">
+          Oda bilgileri hazırlanıyor.
+        </p>
+      </div>
+
+      <div class="live-room-actions">
+        <button id="refreshLiveRoomBtn" class="live-room-button secondary" type="button">
+          Yenile
+        </button>
+
+        <button id="leaveLiveRoomBtn" class="live-room-button danger" type="button">
+          Odadan Ayrıl
+        </button>
+
+        <a href="rooms.html" class="live-room-button ghost">
+          Sosyal Odalara Dön
+        </a>
+      </div>
+    </section>
+
+    <section class="live-room-layout">
+      <section class="live-room-stage">
+        <div id="liveRoomFrameState" class="live-room-frame-state">
+          Canlı görüşme alanı hazırlanıyor...
+        </div>
+
+        <div id="jitsiContainer" class="live-room-frame hidden"></div>
+      </section>
+
+      <aside class="live-room-side">
+        <section class="live-room-card">
+          <h2>Oda Bilgileri</h2>
+
+          <div id="liveRoomMeta" class="live-room-meta">
+            <div>
+              <span>Durum</span>
+              <strong>Yükleniyor</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="live-room-card">
+          <div class="live-room-card-header">
+            <h2>Katılımcılar</h2>
+            <span id="liveRoomParticipantCount">0 kişi</span>
+          </div>
+
+          <div id="liveRoomParticipants" class="live-room-participants">
+            <div class="live-room-empty">
+              Katılımcılar yükleniyor...
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://meet.jit.si/external_api.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/liveRoomHandler.js"></script>
+</body>
+</html>
