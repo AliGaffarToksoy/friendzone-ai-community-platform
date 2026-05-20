@@ -409,3 +409,107 @@ label {
     flex-wrap: wrap;
   }
 }
+
+/* =========================================================
+   FriendZone Global Sidebar Scroll Fix
+   Ensures every page sidebar can scroll independently.
+   ========================================================= */
+
+.app-sidebar,
+.community-sidebar,
+.events-sidebar,
+.rooms-sidebar,
+.feed-sidebar,
+.brands-sidebar,
+.profile-sidebar,
+.verify-sidebar,
+.hobbies-sidebar,
+.test-sidebar,
+.chat-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+}
+
+.app-sidebar::-webkit-scrollbar,
+.community-sidebar::-webkit-scrollbar,
+.events-sidebar::-webkit-scrollbar,
+.rooms-sidebar::-webkit-scrollbar,
+.feed-sidebar::-webkit-scrollbar,
+.brands-sidebar::-webkit-scrollbar,
+.profile-sidebar::-webkit-scrollbar,
+.verify-sidebar::-webkit-scrollbar,
+.hobbies-sidebar::-webkit-scrollbar,
+.test-sidebar::-webkit-scrollbar,
+.chat-sidebar::-webkit-scrollbar {
+  width: 7px;
+}
+
+.app-sidebar::-webkit-scrollbar-track,
+.community-sidebar::-webkit-scrollbar-track,
+.events-sidebar::-webkit-scrollbar-track,
+.rooms-sidebar::-webkit-scrollbar-track,
+.feed-sidebar::-webkit-scrollbar-track,
+.brands-sidebar::-webkit-scrollbar-track,
+.profile-sidebar::-webkit-scrollbar-track,
+.verify-sidebar::-webkit-scrollbar-track,
+.hobbies-sidebar::-webkit-scrollbar-track,
+.test-sidebar::-webkit-scrollbar-track,
+.chat-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb,
+.community-sidebar::-webkit-scrollbar-thumb,
+.events-sidebar::-webkit-scrollbar-thumb,
+.rooms-sidebar::-webkit-scrollbar-thumb,
+.feed-sidebar::-webkit-scrollbar-thumb,
+.brands-sidebar::-webkit-scrollbar-thumb,
+.profile-sidebar::-webkit-scrollbar-thumb,
+.verify-sidebar::-webkit-scrollbar-thumb,
+.hobbies-sidebar::-webkit-scrollbar-thumb,
+.test-sidebar::-webkit-scrollbar-thumb,
+.chat-sidebar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.32);
+}
+
+.app-sidebar::-webkit-scrollbar-thumb:hover,
+.community-sidebar::-webkit-scrollbar-thumb:hover,
+.events-sidebar::-webkit-scrollbar-thumb:hover,
+.rooms-sidebar::-webkit-scrollbar-thumb:hover,
+.feed-sidebar::-webkit-scrollbar-thumb:hover,
+.brands-sidebar::-webkit-scrollbar-thumb:hover,
+.profile-sidebar::-webkit-scrollbar-thumb:hover,
+.verify-sidebar::-webkit-scrollbar-thumb:hover,
+.hobbies-sidebar::-webkit-scrollbar-thumb:hover,
+.test-sidebar::-webkit-scrollbar-thumb:hover,
+.chat-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.52);
+}
+
+@media (max-width: 980px) {
+  .app-sidebar,
+  .community-sidebar,
+  .events-sidebar,
+  .rooms-sidebar,
+  .feed-sidebar,
+  .brands-sidebar,
+  .profile-sidebar,
+  .verify-sidebar,
+  .hobbies-sidebar,
+  .test-sidebar,
+  .chat-sidebar {
+    position: relative;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}

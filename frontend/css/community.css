@@ -703,3 +703,93 @@
   background: rgba(239, 68, 68, 0.16) !important;
   color: #ffffff !important;
 }
+
+/* =========================================================
+   Page-specific sidebar scroll safety
+   ========================================================= */
+.community-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+}
+
+.community-sidebar::-webkit-scrollbar {
+  width: 7px;
+}
+
+.community-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.community-sidebar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.32);
+}
+
+.community-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.52);
+}
+
+@media (max-width: 980px) {
+  .community-sidebar {
+    position: relative;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* =========================================================
+   Communities Page Layout Alignment Fix
+   Prevents main content from shifting too far right.
+   ========================================================= */
+
+.community-page,
+.community-shell,
+.community-layout,
+.community-app {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 981px) {
+  .community-page,
+  .community-shell,
+  .community-layout,
+  .community-app {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .community-sidebar {
+    width: 280px;
+    min-width: 280px;
+  }
+
+  .community-main {
+    width: 100%;
+    min-width: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+}
+
+@media (max-width: 980px) {
+  .community-main {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}

@@ -1184,3 +1184,92 @@
     grid-template-columns: 1fr;
   }
 }
+/* =========================================================
+   Page-specific sidebar scroll safety
+   ========================================================= */
+.rooms-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.38) transparent;
+}
+
+.rooms-sidebar::-webkit-scrollbar {
+  width: 7px;
+}
+
+.rooms-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rooms-sidebar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.32);
+}
+
+.rooms-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.52);
+}
+
+@media (max-width: 980px) {
+  .rooms-sidebar {
+    position: relative;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* =========================================================
+   Rooms Page Layout Alignment Fix
+   Prevents social rooms page horizontal shift.
+   ========================================================= */
+
+.rooms-page,
+.rooms-shell,
+.rooms-layout,
+.rooms-app {
+  width: 100%;
+  max-width: 100%;
+}
+
+.rooms-main {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+@media (min-width: 981px) {
+  .rooms-shell,
+  .rooms-layout,
+  .rooms-app {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .rooms-sidebar {
+    width: 280px;
+    min-width: 280px;
+  }
+
+  .rooms-main {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 980px) {
+  .rooms-main {
+    max-width: 100%;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}

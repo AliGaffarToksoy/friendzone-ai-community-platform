@@ -5,6 +5,8 @@ Social room routes for FriendZone.
 from __future__ import annotations
 
 from datetime import datetime
+import re
+from uuid import uuid4
 
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -102,6 +104,94 @@ def parse_optional_int(value, default: int, minimum: int, maximum: int) -> int:
         parsed = default
 
     return max(minimum, min(maximum, parsed))
+
+
+def slugify_room_name(value: str) -> str:
+    """
+    Convert room name into a safe meeting slug.
+    """
+
+    text = str(value or "").strip().lower()
+
+    replacements = {
+        "ç": "c",
+        "ğ": "g",
+        "ı": "i",
+        "ö": "o",
+        "ş": "s",
+        "ü": "u",
+    }
+
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    text = text.strip("-")
+
+    return text or "room"
+
+
+def is_valid_meeting_url(value: str | None) -> bool:
+    """
+    Validate meeting URL and reject unsafe placeholder values.
+    """
+
+    if not value:
+        return False
+
+    text = str(value).strip()
+
+    if not text:
+        return False
+
+    if text.lower() in {"none", "null", "undefined", "false", "#"}:
+        return False
+
+    return text.startswith("https://") or text.startswith("http://")
+
+
+def generate_jitsi_meeting_url(room_name: str, room_type: str = "room") -> str:
+    """
+    Generate a safe Jitsi meeting URL for FriendZone rooms.
+    """
+
+    slug = slugify_room_name(room_name)
+    unique = uuid4().hex[:10]
+
+    return f"https://meet.jit.si/friendzone-{room_type}-{slug}-{unique}"
+
+
+def normalize_meeting_fields(
+    room_type: str,
+    room_name: str,
+    meeting_provider: str | None,
+    meeting_url: str | None,
+) -> tuple[str | None, str | None]:
+    """
+    Normalize meeting provider and URL.
+
+    For voice, meet, and event rooms:
+    - Default provider becomes jitsi.
+    - Missing or invalid URL becomes a generated Jitsi URL.
+    """
+
+    if room_type not in {"event", "voice", "meet"}:
+        return None, None
+
+    provider = meeting_provider or "jitsi"
+
+    if provider == "jitsi" and not is_valid_meeting_url(meeting_url):
+        meeting_url = generate_jitsi_meeting_url(room_name, room_type)
+
+    if provider in {"internal", "livekit"} and not is_valid_meeting_url(meeting_url):
+        meeting_url = generate_jitsi_meeting_url(room_name, room_type)
+        provider = "jitsi"
+
+    if provider in {"google_meet", "zoom", "external"} and not is_valid_meeting_url(meeting_url):
+        meeting_url = generate_jitsi_meeting_url(room_name, room_type)
+        provider = "jitsi"
+
+    return provider, meeting_url
 
 
 def get_user_membership(user_id: int, community_id: int) -> CommunityMember | None:
@@ -237,12 +327,38 @@ def serialize_room(room: SocialRoom, viewer_id: int) -> dict:
 
 def serialize_participant(participant: SocialRoomParticipant) -> dict:
     """
-    Serialize participant with user.
+    Serialize participant with user and community role.
     """
 
     user = User.query.get(participant.user_id)
 
-    return participant.to_dict(user=user)
+    data = participant.to_dict(user=user)
+
+    room = SocialRoom.query.get(participant.room_id)
+
+    community_role = None
+
+    if room and room.community_id:
+        membership = CommunityMember.query.filter_by(
+            user_id=participant.user_id,
+            community_id=room.community_id,
+            is_active=True,
+        ).first()
+
+        if membership:
+            community_role = membership.role
+
+    data["community_role"] = community_role
+    data["display_role"] = participant.role
+
+    if participant.role == "host":
+        data["display_role"] = "host"
+    elif community_role in {"admin", "moderator"}:
+        data["display_role"] = community_role
+    else:
+        data["display_role"] = "participant"
+
+    return data
 
 
 @social_room_bp.route("", methods=["GET"])
@@ -446,8 +562,12 @@ def create_room() -> tuple:
     if room_type == "gaming" and not game_title:
         return error_response("Oyun odası için oyun adı zorunludur.")
 
-    if room_type in {"event", "voice", "meet"} and not meeting_url:
-        return error_response("Bu oda tipi için toplantı linki zorunludur.")
+    meeting_provider, meeting_url = normalize_meeting_fields(
+        room_type=room_type,
+        room_name=name,
+        meeting_provider=meeting_provider,
+        meeting_url=meeting_url,
+    )
 
     max_participants = parse_optional_int(
         max_participants,
@@ -490,11 +610,12 @@ def create_room() -> tuple:
         room_type = "event"
         visibility = "community"
 
-        if not meeting_provider:
-            meeting_provider = "jitsi"
-
-        if not meeting_url:
-            meeting_url = f"https://meet.jit.si/friendzone-event-{event.id}"
+        meeting_provider, meeting_url = normalize_meeting_fields(
+            room_type=room_type,
+            room_name=name,
+            meeting_provider=meeting_provider,
+            meeting_url=meeting_url,
+        )
 
     room = SocialRoom(
         community_id=community_id,
@@ -718,8 +839,12 @@ def update_room(room_id: int) -> tuple:
     if room_type == "gaming" and not game_title:
         return error_response("Oyun odası için oyun adı zorunludur.")
 
-    if room_type in {"event", "voice", "meet"} and not meeting_url:
-        return error_response("Bu oda tipi için toplantı linki zorunludur.")
+    meeting_provider, meeting_url = normalize_meeting_fields(
+        room_type=room_type,
+        room_name=name,
+        meeting_provider=meeting_provider,
+        meeting_url=meeting_url,
+    )
 
     max_participants = parse_optional_int(
         max_participants,
