@@ -14,9 +14,7 @@ from backend.utils.validators import is_valid_edu_email, is_strong_password
 from backend.utils.helpers import success_response, error_response
 from backend import bcrypt
 
-
 auth_bp = Blueprint('auth', __name__)
-
 
 @auth_bp.route('/register', methods=['POST'])
 def register() -> tuple:

@@ -25,7 +25,6 @@ from backend.services.notification_service import create_unique_notification, no
 
 event_bp = Blueprint("events", __name__)
 
-
 ALLOWED_POSTER_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 MAX_POSTER_SIZE_MB = 6
 VALID_EVENT_TYPES = {"offline", "online", "hybrid"}

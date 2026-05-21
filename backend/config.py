@@ -14,7 +14,6 @@ from dotenv import load_dotenv
 # Load environment variables from a `.env` file if present
 load_dotenv()
 
-
 class Config:
     """Base configuration loaded for all environments."""
 
@@ -46,7 +45,6 @@ class DevelopmentConfig(Config):
     """Development-specific configuration."""
 
     DEBUG = True
-
 
 class ProductionConfig(Config):
     """Production-specific configuration."""
