@@ -30,7 +30,6 @@ MAX_POSTER_SIZE_MB = 6
 VALID_EVENT_TYPES = {"offline", "online", "hybrid"}
 VALID_PARTICIPATION_STATUSES = {"going", "interested", "cancelled"}
 
-
 def get_event_upload_root() -> Path:
     root = Path(current_app.root_path) / "uploads" / "event_posters"
     root.mkdir(parents=True, exist_ok=True)
@@ -54,7 +53,6 @@ def parse_datetime(value: str | None) -> datetime | None:
     except Exception:
         return None
 
-
 def user_is_community_member(user_id: int, community_id: int) -> bool:
     membership = CommunityMember.query.filter_by(
         user_id=user_id,
@@ -71,7 +69,6 @@ def get_user_membership(user_id: int, community_id: int) -> CommunityMember | No
         community_id=community_id,
         is_active=True,
     ).first()
-
 
 def user_can_manage_community(user_id: int, community_id: int) -> bool:
     membership = get_user_membership(user_id, community_id)

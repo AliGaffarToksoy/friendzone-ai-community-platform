@@ -45,7 +45,6 @@ class DevelopmentConfig(Config):
     """Development-specific configuration."""
 
     DEBUG = True
-
 class ProductionConfig(Config):
     """Production-specific configuration."""
 

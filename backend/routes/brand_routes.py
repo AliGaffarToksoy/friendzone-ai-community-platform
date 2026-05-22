@@ -805,7 +805,6 @@ def remove_community_sponsor(community_id: int, sponsor_id: int) -> tuple:
         id=sponsor_id,
         community_id=community.id,
     ).first()
-
     if not sponsor or not sponsor.is_active:
         return error_response("Sponsor kaydı bulunamadı.", status_code=404)
 

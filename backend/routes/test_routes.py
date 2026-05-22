@@ -13,14 +13,12 @@ from backend.ml.community_assigner import assign_user_to_best_community
 
 test_bp = Blueprint("test", __name__)
 
-
 @test_bp.route("/personality", methods=["POST"])
 @jwt_required()
 def submit_personality() -> tuple:
     """
     Handle submission of the 24-question MBTI-style personality test.
     """
-
     data = request.get_json() or {}
     answers = data.get("answers")
 
@@ -29,7 +27,6 @@ def submit_personality() -> tuple:
             "Lütfen 24 sorunun tamamını cevaplayın.",
             status_code=422
         )
-
     try:
         parsed_answers = [int(answer) for answer in answers]
         mbti = compute_mbti(parsed_answers)
