@@ -20,7 +20,6 @@ def submit_personality() -> tuple:
     """
     Handle submission of the 24-question MBTI-style personality test.
     """
-
     data = request.get_json() or {}
     answers = data.get("answers")
 
@@ -29,7 +28,6 @@ def submit_personality() -> tuple:
             "Lütfen 24 sorunun tamamını cevaplayın.",
             status_code=422
         )
-
     try:
         parsed_answers = [int(answer) for answer in answers]
         mbti = compute_mbti(parsed_answers)
