@@ -13,7 +13,6 @@ from backend.ml.community_assigner import assign_user_to_best_community
 
 test_bp = Blueprint("test", __name__)
 
-
 @test_bp.route("/personality", methods=["POST"])
 @jwt_required()
 def submit_personality() -> tuple:
