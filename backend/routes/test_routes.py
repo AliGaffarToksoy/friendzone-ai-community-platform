@@ -10,9 +10,7 @@ from backend.models.user_model import User
 from backend.utils.helpers import success_response, error_response, compute_mbti
 from backend.ml.community_assigner import assign_user_to_best_community
 
-
 test_bp = Blueprint("test", __name__)
-
 @test_bp.route("/personality", methods=["POST"])
 @jwt_required()
 def submit_personality() -> tuple:
