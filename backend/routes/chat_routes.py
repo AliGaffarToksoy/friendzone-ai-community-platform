@@ -13,9 +13,7 @@ from backend.models.community_model import Community, CommunityMember
 from backend.models.chat_room_model import ChatRoom
 from backend.utils.helpers import success_response, error_response
 
-
 chat_bp = Blueprint("chat", __name__)
-
 
 def ensure_chat_room(community: Community) -> ChatRoom:
     """
@@ -108,7 +106,6 @@ def get_messages(community_id: int) -> tuple:
         })
 
     return success_response("Mesajlar getirildi.", data)
-
 
 @chat_bp.route("/message", methods=["POST"])
 @jwt_required()
