@@ -350,13 +350,24 @@ function createRoomCard(room) {
     const meetingBtn = document.createElement('button');
     meetingBtn.type = 'button';
     meetingBtn.className = 'room-action-button secondary';
-    meetingBtn.textContent = getMeetingButtonText(room.meeting_provider);
+    meetingBtn.textContent = 'Canlı Odaya Gir';
 
     meetingBtn.addEventListener('click', async () => {
       await openLiveRoom(room);
     });
 
     actions.appendChild(meetingBtn);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'room-action-button ghost';
+    copyBtn.textContent = 'Link Kopyala';
+
+    copyBtn.addEventListener('click', async () => {
+      await copyRoomJoinLink(room);
+    });
+
+    actions.appendChild(copyBtn);
   }
 
   const participantsBtn = document.createElement('button');
@@ -460,6 +471,10 @@ function renderRoomDetail(room) {
     metaGrid.appendChild(createRoomDetailMeta('Sağlayıcı', getMeetingProviderLabel(room.meeting_provider)));
   }
 
+  if (isLiveRoomCapable(room)) {
+    metaGrid.appendChild(createRoomDetailMeta('FriendZone Link', getLiveRoomUrl(room.id)));
+  }
+
   if (room.event_title) {
     metaGrid.appendChild(createRoomDetailMeta('Etkinlik', room.event_title));
   }
@@ -491,13 +506,24 @@ function renderRoomDetail(room) {
     const meetingBtn = document.createElement('button');
     meetingBtn.type = 'button';
     meetingBtn.className = 'room-detail-button secondary';
-    meetingBtn.textContent = getMeetingButtonText(room.meeting_provider);
+    meetingBtn.textContent = 'Canlı Odaya Gir';
 
     meetingBtn.addEventListener('click', async () => {
       await openLiveRoom(room);
     });
 
     actions.appendChild(meetingBtn);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'room-detail-button ghost';
+    copyBtn.textContent = 'Katılım Linkini Kopyala';
+
+    copyBtn.addEventListener('click', async () => {
+      await copyRoomJoinLink(room);
+    });
+
+    actions.appendChild(copyBtn);
   }
 
   const participantsBtn = document.createElement('button');
@@ -825,6 +851,35 @@ function syncCategoryCardsWithType(roomType) {
     const buttonType = button.dataset.roomType || '';
     button.classList.toggle('active', buttonType === (roomType || ''));
   });
+}
+
+function getLiveRoomUrl(roomId) {
+  return `${window.location.origin}/live-room.html?id=${encodeURIComponent(roomId)}`;
+}
+
+async function copyRoomJoinLink(room) {
+  if (!room || !room.id) {
+    showToast('Kopyalanacak oda linki bulunamadı.', 'error');
+    return;
+  }
+
+  const value = getLiveRoomUrl(room.id);
+
+  try {
+    await navigator.clipboard.writeText(value);
+    showToast('FriendZone katılım linki kopyalandı.', 'success');
+  } catch (error) {
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+
+    showToast('FriendZone katılım linki kopyalandı.', 'success');
+  }
 }
 
 function isSafeMeetingUrl(value) {

@@ -417,3 +417,63 @@ cat <<'EOF' >> frontend/css/live-room.css
   background: linear-gradient(135deg, rgba(244, 114, 182, 0.9), rgba(99, 102, 241, 0.82));
 }
 EOF
+/* =========================================================
+   Live Room Link Share Box
+   ========================================================= */
+
+.live-room-link-box {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.live-room-link-box span {
+  color: rgba(148, 163, 184, 0.86);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.live-room-link-box input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: rgba(2, 6, 23, 0.42);
+  color: rgba(226, 232, 240, 0.92);
+  outline: none;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.live-room-link-box button {
+  min-height: 38px;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  border-radius: 14px;
+  background: rgba(99, 102, 241, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 900;
+}
+
+.live-room-link-box button:hover {
+  background: rgba(99, 102, 241, 0.28);
+}
+
+.live-room-jitsi-fallback-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 620px;
+  border: 0;
+  display: block;
+  background: #020617;
+}
+
+@media (max-width: 1080px) {
+  .live-room-jitsi-fallback-frame {
+    min-height: 520px;
+  }
+}

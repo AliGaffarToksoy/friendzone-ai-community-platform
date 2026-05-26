@@ -29,6 +29,10 @@
       </div>
 
       <div class="live-room-actions">
+        <button id="copyLiveRoomLinkBtn" class="live-room-button secondary" type="button">
+          Katılım Linkini Kopyala
+        </button>
+
         <button id="refreshLiveRoomBtn" class="live-room-button secondary" type="button">
           Yenile
         </button>
@@ -61,6 +65,26 @@
               <span>Durum</span>
               <strong>Yükleniyor</strong>
             </div>
+          </div>
+        </section>
+
+        <section class="live-room-card">
+          <h2>Katılım Linkleri</h2>
+
+          <div class="live-room-link-box">
+            <span>FriendZone Katılım Linki</span>
+            <input id="friendZoneJoinLink" type="text" readonly value="Hazırlanıyor..." />
+            <button id="copyFriendZoneJoinLinkBtn" type="button">
+              Kopyala
+            </button>
+          </div>
+
+          <div class="live-room-link-box">
+            <span>Jitsi Oda Linki</span>
+            <input id="jitsiJoinLink" type="text" readonly value="Hazırlanıyor..." />
+            <button id="copyJitsiJoinLinkBtn" type="button">
+              Kopyala
+            </button>
           </div>
         </section>
 

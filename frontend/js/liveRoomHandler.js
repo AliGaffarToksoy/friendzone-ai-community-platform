@@ -1,9 +1,9 @@
-cat <<'EOF' > frontend/js/liveRoomHandler.js
 let liveRoomId = null;
 let liveRoomCache = null;
 let jitsiApi = null;
 let jitsiParticipants = [];
 let friendZoneParticipants = [];
+let participantsInterval = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
@@ -24,19 +24,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   bindLiveRoomEvents();
 
-  await ensureLiveRoomJoined();
-  await loadLiveRoom();
-
-  setInterval(async () => {
+  try {
     await ensureLiveRoomJoined();
-    await loadParticipants();
-    await refreshLiveRoomMeta();
-  }, 8000);
+    await loadLiveRoom();
+
+    participantsInterval = setInterval(async () => {
+      await ensureLiveRoomJoined();
+      await loadParticipants();
+      await refreshLiveRoomMeta();
+      updateJitsiParticipants();
+    }, 8000);
+  } catch (error) {
+    console.error('Live room init error:', error);
+    showToast('Canlı oda başlatılırken hata oluştu.', 'error');
+    setFrameState(`Canlı oda başlatılamadı: ${error.message}`);
+  }
 });
 
 function bindLiveRoomEvents() {
   const refreshBtn = document.getElementById('refreshLiveRoomBtn');
   const leaveBtn = document.getElementById('leaveLiveRoomBtn');
+  const copyTopBtn = document.getElementById('copyLiveRoomLinkBtn');
+  const copyFriendZoneBtn = document.getElementById('copyFriendZoneJoinLinkBtn');
+  const copyJitsiBtn = document.getElementById('copyJitsiJoinLinkBtn');
 
   if (refreshBtn) {
     refreshBtn.addEventListener('click', async () => {
@@ -46,11 +56,28 @@ function bindLiveRoomEvents() {
   }
 
   if (leaveBtn) {
-    leaveBtn.addEventListener('click', leaveLiveRoom);
+    leaveBtn.addEventListener('click', () => leaveLiveRoom(true));
+  }
+
+  if (copyTopBtn) {
+    copyTopBtn.addEventListener('click', () => copyText(getFriendZoneJoinUrl(), 'Katılım linki kopyalandı.'));
+  }
+
+  if (copyFriendZoneBtn) {
+    copyFriendZoneBtn.addEventListener('click', () => copyText(getFriendZoneJoinUrl(), 'FriendZone katılım linki kopyalandı.'));
+  }
+
+  if (copyJitsiBtn) {
+    copyJitsiBtn.addEventListener('click', () => {
+      const url = getSafeMeetingUrl(liveRoomCache);
+      copyText(url, 'Jitsi linki kopyalandı.');
+    });
   }
 
   window.addEventListener('beforeunload', () => {
-    sendLeaveBeacon();
+    if (participantsInterval) {
+      clearInterval(participantsInterval);
+    }
 
     if (jitsiApi) {
       try {
@@ -102,6 +129,7 @@ async function refreshLiveRoomMeta() {
 
   liveRoomCache = response.data;
   renderLiveRoomMetaOnly(liveRoomCache);
+  renderJoinLinks(liveRoomCache);
 }
 
 function renderLiveRoom(room) {
@@ -122,6 +150,7 @@ function renderLiveRoom(room) {
   }
 
   renderLiveRoomMetaOnly(room);
+  renderJoinLinks(room);
   renderMeetingFrame(room);
 }
 
@@ -148,6 +177,19 @@ function renderLiveRoomMetaOnly(room) {
   updateParticipantCountLabel();
 }
 
+function renderJoinLinks(room) {
+  const friendZoneInput = document.getElementById('friendZoneJoinLink');
+  const jitsiInput = document.getElementById('jitsiJoinLink');
+
+  if (friendZoneInput) {
+    friendZoneInput.value = getFriendZoneJoinUrl();
+  }
+
+  if (jitsiInput) {
+    jitsiInput.value = getSafeMeetingUrl(room) || 'Jitsi linki bulunamadı';
+  }
+}
+
 function renderMeetingFrame(room) {
   const container = document.getElementById('jitsiContainer');
 
@@ -161,81 +203,107 @@ function renderMeetingFrame(room) {
     return;
   }
 
-  if (jitsiApi) {
+  if (jitsiApi || container.querySelector('iframe')) {
+    setFrameState('');
     return;
   }
 
   const roomName = extractJitsiRoomName(meetingUrl);
 
   if (!roomName) {
-    container.classList.add('hidden');
-    setFrameState('Jitsi oda adı çözümlenemedi.');
+    renderIframeFallback(container, meetingUrl);
     return;
   }
 
   container.classList.remove('hidden');
   setFrameState('');
 
+  if (typeof JitsiMeetExternalAPI === 'undefined') {
+    console.warn('JitsiMeetExternalAPI yüklenemedi. Iframe fallback kullanılacak.');
+    renderIframeFallback(container, meetingUrl);
+    return;
+  }
+
   const currentUser = getCurrentUserFromStorage();
 
-  jitsiApi = new JitsiMeetExternalAPI('meet.jit.si', {
-    roomName,
-    parentNode: container,
-    width: '100%',
-    height: '100%',
-    userInfo: {
-      displayName: currentUser?.name || 'FriendZone Kullanıcısı',
-      email: currentUser?.email || undefined
-    },
-    configOverwrite: {
-      prejoinPageEnabled: false,
-      startWithAudioMuted: false,
-      startWithVideoMuted: false,
-      disableDeepLinking: true
-    },
-    interfaceConfigOverwrite: {
-      SHOW_JITSI_WATERMARK: false,
-      SHOW_WATERMARK_FOR_GUESTS: false,
-      DEFAULT_REMOTE_DISPLAY_NAME: 'FriendZone Katılımcısı',
-      TOOLBAR_BUTTONS: [
-        'microphone',
-        'camera',
-        'desktop',
-        'fullscreen',
-        'fodeviceselection',
-        'hangup',
-        'chat',
-        'raisehand',
-        'tileview',
-        'settings',
-        'videoquality'
-      ]
-    }
-  });
+  try {
+    jitsiApi = new JitsiMeetExternalAPI('meet.jit.si', {
+      roomName,
+      parentNode: container,
+      width: '100%',
+      height: '100%',
+      userInfo: {
+        displayName: currentUser?.name || 'FriendZone Kullanıcısı',
+        email: currentUser?.email || undefined
+      },
+      configOverwrite: {
+        prejoinPageEnabled: false,
+        startWithAudioMuted: false,
+        startWithVideoMuted: false,
+        disableDeepLinking: true
+      },
+      interfaceConfigOverwrite: {
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        DEFAULT_REMOTE_DISPLAY_NAME: 'FriendZone Katılımcısı',
+        TOOLBAR_BUTTONS: [
+          'microphone',
+          'camera',
+          'desktop',
+          'fullscreen',
+          'fodeviceselection',
+          'hangup',
+          'chat',
+          'raisehand',
+          'tileview',
+          'settings',
+          'videoquality'
+        ]
+      }
+    });
 
-  jitsiApi.addListener('videoConferenceJoined', async () => {
-    await ensureLiveRoomJoined();
-    await loadParticipants();
-    updateJitsiParticipants();
-  });
+    jitsiApi.addListener('videoConferenceJoined', async () => {
+      await ensureLiveRoomJoined();
+      await loadParticipants();
+      updateJitsiParticipants();
+    });
 
-  jitsiApi.addListener('participantJoined', () => {
-    setTimeout(updateJitsiParticipants, 400);
-  });
+    jitsiApi.addListener('participantJoined', () => {
+      setTimeout(updateJitsiParticipants, 500);
+    });
 
-  jitsiApi.addListener('participantLeft', () => {
-    setTimeout(updateJitsiParticipants, 700);
-  });
+    jitsiApi.addListener('participantLeft', () => {
+      setTimeout(updateJitsiParticipants, 800);
+    });
 
-  jitsiApi.addListener('displayNameChange', () => {
-    setTimeout(updateJitsiParticipants, 500);
-  });
+    jitsiApi.addListener('displayNameChange', () => {
+      setTimeout(updateJitsiParticipants, 600);
+    });
 
-  jitsiApi.addListener('readyToClose', async () => {
-    await leaveLiveRoom(false);
-  });
+    jitsiApi.addListener('readyToClose', async () => {
+      await leaveLiveRoom(false);
+    });
 
-  setTimeout(updateJitsiParticipants, 1200);
+    setTimeout(updateJitsiParticipants, 1400);
+  } catch (error) {
+    console.error('Jitsi API init error:', error);
+    renderIframeFallback(container, meetingUrl);
+  }
+}
+
+function renderIframeFallback(container, meetingUrl) {
+  container.innerHTML = '';
+
+  const iframe = document.createElement('iframe');
+  iframe.src = meetingUrl;
+  iframe.allow = 'camera; microphone; fullscreen; display-capture; autoplay';
+  iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+  iframe.className = 'live-room-jitsi-fallback-frame';
+
+  container.appendChild(iframe);
+  container.classList.remove('hidden');
+
+  setFrameState('');
 }
 
 function updateJitsiParticipants() {
@@ -273,6 +341,10 @@ function updateParticipantCountLabel() {
   const guestCount = Math.max(0, jitsiCount - fzCount);
 
   count.textContent = `${fzCount} FZ · ${jitsiCount} Jitsi · ${guestCount} misafir`;
+}
+
+function getFriendZoneJoinUrl() {
+  return `${window.location.origin}/live-room.html?id=${encodeURIComponent(liveRoomId || '')}`;
 }
 
 function getSafeMeetingUrl(room) {
@@ -511,25 +583,26 @@ async function leaveLiveRoom(redirect = true) {
   }
 }
 
-function sendLeaveBeacon() {
-  const token = localStorage.getItem('token');
-
-  if (!token || !liveRoomId || !navigator.sendBeacon) {
+async function copyText(value, successMessage) {
+  if (!value) {
+    showToast('Kopyalanacak link bulunamadı.', 'error');
     return;
   }
 
   try {
-    const payload = JSON.stringify({
-      token
-    });
-
-    const blob = new Blob([payload], {
-      type: 'application/json'
-    });
-
-    navigator.sendBeacon(`${API_BASE}/api/rooms/${liveRoomId}/leave`, blob);
+    await navigator.clipboard.writeText(value);
+    showToast(successMessage || 'Link kopyalandı.', 'success');
   } catch (error) {
-    console.warn('Leave beacon could not be sent:', error);
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+
+    showToast(successMessage || 'Link kopyalandı.', 'success');
   }
 }
 
@@ -659,4 +732,3 @@ function getInitials(name) {
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'FZ';
 }
-EOF
