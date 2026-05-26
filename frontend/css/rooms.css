@@ -1318,3 +1318,15 @@
 .room-category-card[data-room-type="event"] {
   border-color: rgba(244, 63, 94, 0.24);
 }
+
+/* =========================================================
+   Room Type Help Text
+   ========================================================= */
+
+.room-type-help {
+  display: block;
+  margin-top: 8px;
+  color: rgba(203, 213, 225, 0.68);
+  font-size: 12px;
+  line-height: 1.45;
+}

@@ -135,6 +135,12 @@ async function refreshLiveRoomMeta() {
 function renderLiveRoom(room) {
   const title = document.getElementById('liveRoomTitle');
   const subtitle = document.getElementById('liveRoomSubtitle');
+  const experienceBadge = document.getElementById('liveRoomExperienceBadge');
+
+  if (experienceBadge) {
+    experienceBadge.textContent = getLiveExperienceBadgeText(room);
+    experienceBadge.className = `live-room-experience-badge type-${room.room_type || 'default'}`;
+  }
 
   if (title) {
     title.textContent = room.name || 'Canlı Oda';
@@ -237,40 +243,20 @@ function renderMeetingFrame(room) {
         displayName: currentUser?.name || 'FriendZone Kullanıcısı',
         email: currentUser?.email || undefined
       },
-      configOverwrite: {
-        prejoinPageEnabled: false,
-        startWithAudioMuted: false,
-        startWithVideoMuted: false,
-        disableDeepLinking: true
-      },
-      interfaceConfigOverwrite: {
-        SHOW_JITSI_WATERMARK: false,
-        SHOW_WATERMARK_FOR_GUESTS: false,
-        DEFAULT_REMOTE_DISPLAY_NAME: 'FriendZone Katılımcısı',
-        TOOLBAR_BUTTONS: [
-          'microphone',
-          'camera',
-          'desktop',
-          'fullscreen',
-          'fodeviceselection',
-          'hangup',
-          'chat',
-          'raisehand',
-          'tileview',
-          'settings',
-          'videoquality'
-        ]
-      }
+      configOverwrite: buildJitsiConfig(room),
+      interfaceConfigOverwrite: buildJitsiInterfaceConfig(room)
     });
 
     jitsiApi.addListener('videoConferenceJoined', async () => {
       await ensureLiveRoomJoined();
       await loadParticipants();
       updateJitsiParticipants();
+      await enforceVoiceOnlyMode(room);
     });
 
     jitsiApi.addListener('participantJoined', () => {
       setTimeout(updateJitsiParticipants, 500);
+      setTimeout(() => enforceVoiceOnlyMode(room), 700);
     });
 
     jitsiApi.addListener('participantLeft', () => {
@@ -289,6 +275,114 @@ function renderMeetingFrame(room) {
   } catch (error) {
     console.error('Jitsi API init error:', error);
     renderIframeFallback(container, meetingUrl);
+  }
+}
+
+function buildJitsiConfig(room) {
+  const isVoiceRoom = room?.room_type === 'voice';
+  const isEventRoom = room?.room_type === 'event';
+
+  return {
+    prejoinPageEnabled: false,
+    disableDeepLinking: true,
+    enableWelcomePage: false,
+    enableClosePage: false,
+    disableInviteFunctions: false,
+    toolbarButtons: buildJitsiToolbarButtons(room),
+
+    startWithAudioMuted: isEventRoom,
+    startWithVideoMuted: isVoiceRoom ? true : false,
+
+    ...(isVoiceRoom ? {
+      startAudioOnly: true,
+      startWithVideoMuted: true,
+      disableInitialGUM: false,
+      enableNoisyMicDetection: true,
+      disableSimulcast: true,
+      disableLocalVideoFlip: true,
+      constraints: {
+        video: false,
+        audio: true
+      }
+    } : {}),
+
+    ...(isEventRoom ? {
+      startAudioOnly: false,
+      startWithAudioMuted: true,
+      startWithVideoMuted: false
+    } : {})
+  };
+}
+
+function buildJitsiInterfaceConfig(room) {
+  return {
+    SHOW_JITSI_WATERMARK: false,
+    SHOW_WATERMARK_FOR_GUESTS: false,
+    DEFAULT_REMOTE_DISPLAY_NAME: 'FriendZone Katılımcısı',
+    TOOLBAR_BUTTONS: buildJitsiToolbarButtons(room)
+  };
+}
+
+function buildJitsiToolbarButtons(room) {
+  if (room?.room_type === 'voice') {
+    return [
+      'microphone',
+      'hangup',
+      'chat',
+      'raisehand',
+      'settings'
+    ];
+  }
+
+  if (room?.room_type === 'event') {
+    return [
+      'microphone',
+      'camera',
+      'desktop',
+      'fullscreen',
+      'hangup',
+      'chat',
+      'raisehand',
+      'tileview',
+      'settings',
+      'videoquality'
+    ];
+  }
+
+  return [
+    'microphone',
+    'camera',
+    'desktop',
+    'fullscreen',
+    'fodeviceselection',
+    'hangup',
+    'chat',
+    'raisehand',
+    'tileview',
+    'settings',
+    'videoquality'
+  ];
+}
+
+async function enforceVoiceOnlyMode(room) {
+  if (!jitsiApi || room?.room_type !== 'voice') return;
+
+  try {
+    if (typeof jitsiApi.isVideoMuted === 'function') {
+      const isMuted = await jitsiApi.isVideoMuted();
+
+      if (!isMuted) {
+        jitsiApi.executeCommand('toggleVideo');
+      }
+    } else {
+      jitsiApi.executeCommand('toggleVideo');
+    }
+
+    if (typeof jitsiApi.executeCommand === 'function') {
+      jitsiApi.executeCommand('setTileView', true);
+    }
+  } catch (error) {
+    console.warn('Voice-only video enforcement failed:', error);
   }
 }
 
@@ -637,6 +731,16 @@ function createMetaItem(label, value) {
   return item;
 }
 
+function getLiveExperienceBadgeText(room) {
+  const map = {
+    voice: '🎙️ Sesli Muhabbet Odası',
+    meet: '🎥 Video Meet Odası',
+    event: '📡 Canlı Yayın / Online Etkinlik'
+  };
+
+  return map[room?.room_type] || '✨ Canlı Sosyal Oda';
+}
+
 function getLiveConnectionLabel(room) {
   const map = {
     voice: 'Ses Bağlantısı',
@@ -649,7 +753,7 @@ function getLiveConnectionLabel(room) {
 
 function getLiveExperienceLabel(room) {
   const map = {
-    voice: 'Sesli muhabbet odası',
+    voice: 'Sesli muhabbet odası · kamera kapalı başlar',
     meet: 'Video görüşme odası',
     event: 'Canlı yayın / online etkinlik'
   };

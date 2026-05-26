@@ -116,8 +116,12 @@ function bindRoomEvents() {
   }
 
   if (roomTypeSelect) {
-    roomTypeSelect.addEventListener('change', updateSmartRoomFields);
+    roomTypeSelect.addEventListener('change', () => {
+      updateSmartRoomFields();
+      updateRoomTypeHelp();
+    });
     updateSmartRoomFields();
+    updateRoomTypeHelp();
   }
 
   if (closeRoomParticipantsBtn) {
@@ -804,6 +808,25 @@ function renderRoomParticipants(participants) {
   });
 }
 
+function updateRoomTypeHelp() {
+  const roomType = getInputValue('roomType') || 'casual';
+  const help = document.getElementById('roomTypeHelp');
+
+  if (!help) return;
+
+  const map = {
+    casual: 'Genel sohbet odasıdır. Canlı görüşme açmaz, topluluk içinde sosyal alan olarak listelenir.',
+    language: 'Dil pratiği odasıdır. Dil bilgisi zorunludur; canlı görüşme açmaz.',
+    gaming: 'Oyun buluşma odasıdır. Oyun adı zorunludur; canlı görüşme açmaz.',
+    study: 'Ders çalışma odasıdır. Çalışma grubu olarak listelenir; canlı görüşme açmaz.',
+    voice: 'Sesli muhabbet odasıdır. Otomatik canlı bağlantı üretir ve kamera kapalı başlar.',
+    meet: 'Video görüşme odasıdır. Zoom / Google Meet mantığıyla FriendZone içinde açılır.',
+    event: 'Canlı yayın veya online etkinlik odasıdır. Webinar/seminer gibi kullanılabilir.'
+  };
+
+  help.textContent = map[roomType] || map.casual;
+}
+
 function updateSmartRoomFields() {
   const roomType = getInputValue('roomType') || 'casual';
 
@@ -903,7 +926,6 @@ function isLiveRoomCapable(room) {
   if (['event', 'meet', 'voice'].includes(room.room_type)) {
     return true;
   }
-
   return Boolean(room.meeting_provider || isSafeMeetingUrl(room.meeting_url));
 }
 
