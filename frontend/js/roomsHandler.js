@@ -350,7 +350,7 @@ function createRoomCard(room) {
     const meetingBtn = document.createElement('button');
     meetingBtn.type = 'button';
     meetingBtn.className = 'room-action-button secondary';
-    meetingBtn.textContent = 'Canlı Odaya Gir';
+    meetingBtn.textContent = getLiveRoomActionText(room);
 
     meetingBtn.addEventListener('click', async () => {
       await openLiveRoom(room);
@@ -361,7 +361,7 @@ function createRoomCard(room) {
     const copyBtn = document.createElement('button');
     copyBtn.type = 'button';
     copyBtn.className = 'room-action-button ghost';
-    copyBtn.textContent = 'Link Kopyala';
+    copyBtn.textContent = getLiveRoomShareText(room);
 
     copyBtn.addEventListener('click', async () => {
       await copyRoomJoinLink(room);
@@ -473,6 +473,7 @@ function renderRoomDetail(room) {
 
   if (isLiveRoomCapable(room)) {
     metaGrid.appendChild(createRoomDetailMeta('FriendZone Link', getLiveRoomUrl(room.id)));
+    metaGrid.appendChild(createRoomDetailMeta('Deneyim', getRoomExperienceDescription(room)));
   }
 
   if (room.event_title) {
@@ -506,7 +507,7 @@ function renderRoomDetail(room) {
     const meetingBtn = document.createElement('button');
     meetingBtn.type = 'button';
     meetingBtn.className = 'room-detail-button secondary';
-    meetingBtn.textContent = 'Canlı Odaya Gir';
+    meetingBtn.textContent = getLiveRoomActionText(room);
 
     meetingBtn.addEventListener('click', async () => {
       await openLiveRoom(room);
@@ -517,7 +518,7 @@ function renderRoomDetail(room) {
     const copyBtn = document.createElement('button');
     copyBtn.type = 'button';
     copyBtn.className = 'room-detail-button ghost';
-    copyBtn.textContent = 'Katılım Linkini Kopyala';
+    copyBtn.textContent = getLiveRoomShareText(room);
 
     copyBtn.addEventListener('click', async () => {
       await copyRoomJoinLink(room);
@@ -967,6 +968,36 @@ function getVisibilityLabel(visibility) {
   };
 
   return map[visibility] || 'Topluluk';
+}
+
+function getLiveRoomActionText(room) {
+  const map = {
+    voice: 'Sesli Odaya Gir',
+    meet: 'Video Meet’e Gir',
+    event: 'Canlı Yayına Katıl'
+  };
+
+  return map[room?.room_type] || 'Canlı Odaya Gir';
+}
+
+function getLiveRoomShareText(room) {
+  const map = {
+    voice: 'Sesli Oda Linkini Kopyala',
+    meet: 'Meet Linkini Kopyala',
+    event: 'Yayın Linkini Kopyala'
+  };
+
+  return map[room?.room_type] || 'Link Kopyala';
+}
+
+function getRoomExperienceDescription(room) {
+  const map = {
+    voice: 'Bu oda sesli muhabbet için tasarlandı. Katılımcılar FriendZone içinden canlı konuşmaya katılabilir.',
+    meet: 'Bu oda video görüşme için tasarlandı. Katılım linki paylaşılabilir ve görüşme FriendZone içinde açılır.',
+    event: 'Bu oda online etkinlik veya canlı yayın için tasarlandı. Katılımcılar yayın linkiyle etkinliğe katılabilir.'
+  };
+
+  return map[room?.room_type] || 'Bu sosyal oda FriendZone içinde canlı etkileşim için kullanılabilir.';
 }
 
 function getMeetingButtonText(provider) {
