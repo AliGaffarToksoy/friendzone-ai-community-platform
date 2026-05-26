@@ -21,7 +21,6 @@ from backend.services.gamification_service import add_points
 from backend.services.notification_service import notify_community_members
 from backend.utils.helpers import error_response, success_response
 
-
 brand_bp = Blueprint("brands", __name__)
 
 

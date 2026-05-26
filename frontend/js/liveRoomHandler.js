@@ -1,7 +1,9 @@
+cat <<'EOF' > frontend/js/liveRoomHandler.js
 let liveRoomId = null;
 let liveRoomCache = null;
 let jitsiApi = null;
 let jitsiParticipants = [];
+let friendZoneParticipants = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
@@ -48,6 +50,8 @@ function bindLiveRoomEvents() {
   }
 
   window.addEventListener('beforeunload', () => {
+    sendLeaveBeacon();
+
     if (jitsiApi) {
       try {
         jitsiApi.dispose();
@@ -126,15 +130,22 @@ function renderLiveRoomMetaOnly(room) {
 
   if (!meta || !room) return;
 
+  const jitsiCount = jitsiParticipants.length || 0;
+  const fzCount = friendZoneParticipants.length || room.current_participants || 0;
+  const guestCount = Math.max(0, jitsiCount - fzCount);
+
   meta.innerHTML = '';
 
   meta.appendChild(createMetaItem('Durum', room.is_live ? 'Canlı' : 'Hazır'));
   meta.appendChild(createMetaItem('Oda Tipi', getRoomTypeLabel(room.room_type)));
   meta.appendChild(createMetaItem('Görünürlük', getVisibilityLabel(room.visibility)));
-  meta.appendChild(createMetaItem('FriendZone Katılımcı', `${room.current_participants || 0}/${room.max_participants || 0}`));
-  meta.appendChild(createMetaItem('Jitsi Katılımcı', `${jitsiParticipants.length || 0} kişi`));
+  meta.appendChild(createMetaItem('FriendZone Katılımcı', `${fzCount}/${room.max_participants || 0}`));
+  meta.appendChild(createMetaItem('Jitsi Bağlantısı', `${jitsiCount} kişi`));
+  meta.appendChild(createMetaItem('Misafir', `${guestCount} kişi`));
   meta.appendChild(createMetaItem('Topluluk', room.community_name || '-'));
   meta.appendChild(createMetaItem('Sağlayıcı', getMeetingProviderLabel(room.meeting_provider)));
+
+  updateParticipantCountLabel();
 }
 
 function renderMeetingFrame(room) {
@@ -165,13 +176,11 @@ function renderMeetingFrame(room) {
   container.classList.remove('hidden');
   setFrameState('');
 
-  const parentNode = container;
-
   const currentUser = getCurrentUserFromStorage();
 
   jitsiApi = new JitsiMeetExternalAPI('meet.jit.si', {
     roomName,
-    parentNode,
+    parentNode: container,
     width: '100%',
     height: '100%',
     userInfo: {
@@ -206,14 +215,19 @@ function renderMeetingFrame(room) {
 
   jitsiApi.addListener('videoConferenceJoined', async () => {
     await ensureLiveRoomJoined();
+    await loadParticipants();
     updateJitsiParticipants();
   });
 
   jitsiApi.addListener('participantJoined', () => {
-    updateJitsiParticipants();
+    setTimeout(updateJitsiParticipants, 400);
   });
 
   jitsiApi.addListener('participantLeft', () => {
+    setTimeout(updateJitsiParticipants, 700);
+  });
+
+  jitsiApi.addListener('displayNameChange', () => {
     setTimeout(updateJitsiParticipants, 500);
   });
 
@@ -229,22 +243,36 @@ function updateJitsiParticipants() {
 
   try {
     const participants = jitsiApi.getParticipantsInfo() || [];
-    jitsiParticipants = participants;
+    jitsiParticipants = normalizeJitsiParticipants(participants);
 
     renderLiveRoomMetaOnly(liveRoomCache);
-    updateJitsiParticipantCountLabel();
+    renderParticipants(friendZoneParticipants);
   } catch (error) {
     console.warn('Jitsi participants could not be read:', error);
   }
 }
 
-function updateJitsiParticipantCountLabel() {
+function normalizeJitsiParticipants(participants) {
+  return (participants || []).map((participant, index) => {
+    return {
+      id: participant.participantId || participant.id || `jitsi-${index}`,
+      displayName: participant.displayName || participant.formattedDisplayName || 'Jitsi Misafiri',
+      avatarURL: participant.avatarURL || null,
+      email: participant.email || null
+    };
+  });
+}
+
+function updateParticipantCountLabel() {
   const count = document.getElementById('liveRoomParticipantCount');
 
-  if (count) {
-    const friendZoneCount = liveRoomCache?.current_participants || 0;
-    count.textContent = `${friendZoneCount} FZ · ${jitsiParticipants.length || 0} Jitsi`;
-  }
+  if (!count) return;
+
+  const fzCount = friendZoneParticipants.length || liveRoomCache?.current_participants || 0;
+  const jitsiCount = jitsiParticipants.length || 0;
+  const guestCount = Math.max(0, jitsiCount - fzCount);
+
+  count.textContent = `${fzCount} FZ · ${jitsiCount} Jitsi · ${guestCount} misafir`;
 }
 
 function getSafeMeetingUrl(room) {
@@ -285,63 +313,171 @@ async function loadParticipants() {
   const response = await authFetch(`${API_BASE}/api/rooms/${liveRoomId}/participants`);
 
   if (!response || !response.success) {
+    friendZoneParticipants = [];
     renderParticipants([]);
     return;
   }
 
-  renderParticipants(response.data || []);
+  friendZoneParticipants = response.data || [];
+  renderParticipants(friendZoneParticipants);
 }
 
 function renderParticipants(participants) {
   const list = document.getElementById('liveRoomParticipants');
-  const count = document.getElementById('liveRoomParticipantCount');
 
-  if (count) {
-    count.textContent = `${participants.length} FZ · ${jitsiParticipants.length || 0} Jitsi`;
-  }
+  updateParticipantCountLabel();
 
   if (!list) return;
 
   list.innerHTML = '';
 
+  const section = document.createElement('div');
+  section.className = 'live-room-participant-section';
+
+  const sectionTitle = document.createElement('div');
+  sectionTitle.className = 'live-room-section-title';
+  sectionTitle.innerHTML = `
+    <strong>FriendZone Katılımcıları</strong>
+    <span>${participants.length} kişi</span>
+  `;
+
+  section.appendChild(sectionTitle);
+
   if (!participants.length) {
-    list.innerHTML = `
+    section.innerHTML += `
       <div class="live-room-empty">
         Bu odada FriendZone hesabıyla aktif katılımcı yok.
       </div>
     `;
-    return;
+  } else {
+    participants.forEach((participant) => {
+      section.appendChild(createFriendZoneParticipantCard(participant));
+    });
   }
 
-  participants.forEach((participant) => {
-    const user = participant.user || {};
+  list.appendChild(section);
 
-    const item = document.createElement('article');
-    item.className = 'live-room-participant';
+  const guests = getJitsiGuests(participants);
 
-    const avatar = document.createElement('div');
-    avatar.className = 'live-room-avatar';
-    avatar.textContent = getInitials(user.name || 'FZ');
+  const guestSection = document.createElement('div');
+  guestSection.className = 'live-room-participant-section';
 
-    const info = document.createElement('div');
+  const guestTitle = document.createElement('div');
+  guestTitle.className = 'live-room-section-title';
+  guestTitle.innerHTML = `
+    <strong>Jitsi Misafirleri</strong>
+    <span>${guests.length} kişi</span>
+  `;
 
-    const name = document.createElement('strong');
-    name.textContent = user.name || 'FriendZone Kullanıcısı';
+  guestSection.appendChild(guestTitle);
 
-    const meta = document.createElement('span');
-    meta.textContent = [
-      getParticipantRoleLabel(participant),
-      user.university,
-      user.department
-    ].filter(Boolean).join(' · ') || 'Katılımcı';
+  if (!guests.length) {
+    guestSection.innerHTML += `
+      <div class="live-room-empty">
+        FriendZone dışı misafir bulunmuyor.
+      </div>
+    `;
+  } else {
+    guests.forEach((guest) => {
+      guestSection.appendChild(createJitsiGuestCard(guest));
+    });
+  }
 
-    info.appendChild(name);
-    info.appendChild(meta);
+  list.appendChild(guestSection);
+}
 
-    item.appendChild(avatar);
-    item.appendChild(info);
+function createFriendZoneParticipantCard(participant) {
+  const user = participant.user || {};
 
-    list.appendChild(item);
+  const item = document.createElement('article');
+  item.className = 'live-room-participant';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'live-room-avatar';
+  avatar.textContent = getInitials(user.name || 'FZ');
+
+  const info = document.createElement('div');
+  info.className = 'live-room-participant-info';
+
+  const nameRow = document.createElement('div');
+  nameRow.className = 'live-room-name-row';
+
+  const name = document.createElement('strong');
+  name.textContent = user.name || 'FriendZone Kullanıcısı';
+
+  const badge = document.createElement('span');
+  badge.className = `live-room-role-badge role-${participant.display_role || participant.role || 'participant'}`;
+  badge.textContent = getParticipantRoleLabel(participant);
+
+  nameRow.appendChild(name);
+  nameRow.appendChild(badge);
+
+  const meta = document.createElement('span');
+  meta.textContent = [
+    user.university,
+    user.department
+  ].filter(Boolean).join(' · ') || 'Profil bilgisi yok';
+
+  info.appendChild(nameRow);
+  info.appendChild(meta);
+
+  item.appendChild(avatar);
+  item.appendChild(info);
+
+  return item;
+}
+
+function createJitsiGuestCard(guest) {
+  const item = document.createElement('article');
+  item.className = 'live-room-participant guest';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'live-room-avatar guest';
+  avatar.textContent = getInitials(guest.displayName || 'JM');
+
+  const info = document.createElement('div');
+  info.className = 'live-room-participant-info';
+
+  const nameRow = document.createElement('div');
+  nameRow.className = 'live-room-name-row';
+
+  const name = document.createElement('strong');
+  name.textContent = guest.displayName || 'Jitsi Misafiri';
+
+  const badge = document.createElement('span');
+  badge.className = 'live-room-role-badge role-guest';
+  badge.textContent = 'Misafir';
+
+  nameRow.appendChild(name);
+  nameRow.appendChild(badge);
+
+  const meta = document.createElement('span');
+  meta.textContent = 'Jitsi üzerinden bağlı · FriendZone hesabı eşleşmedi';
+
+  info.appendChild(nameRow);
+  info.appendChild(meta);
+
+  item.appendChild(avatar);
+  item.appendChild(info);
+
+  return item;
+}
+
+function getJitsiGuests(friendZoneItems) {
+  const friendZoneNames = new Set(
+    (friendZoneItems || [])
+      .map((item) => normalizeName(item?.user?.name))
+      .filter(Boolean)
+  );
+
+  return (jitsiParticipants || []).filter((participant) => {
+    const displayName = normalizeName(participant.displayName);
+
+    if (!displayName) {
+      return true;
+    }
+
+    return !friendZoneNames.has(displayName);
   });
 }
 
@@ -372,6 +508,28 @@ async function leaveLiveRoom(redirect = true) {
     setTimeout(() => {
       window.location.href = 'rooms.html';
     }, 700);
+  }
+}
+
+function sendLeaveBeacon() {
+  const token = localStorage.getItem('token');
+
+  if (!token || !liveRoomId || !navigator.sendBeacon) {
+    return;
+  }
+
+  try {
+    const payload = JSON.stringify({
+      token
+    });
+
+    const blob = new Blob([payload], {
+      type: 'application/json'
+    });
+
+    navigator.sendBeacon(`${API_BASE}/api/rooms/${liveRoomId}/leave`, blob);
+  } catch (error) {
+    console.warn('Leave beacon could not be sent:', error);
   }
 }
 
@@ -486,6 +644,13 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '') || 'friendzone-room';
 }
 
+function normalizeName(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
 function getInitials(name) {
   return String(name || 'FZ')
     .split(' ')
@@ -494,3 +659,4 @@ function getInitials(name) {
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'FZ';
 }
+EOF
