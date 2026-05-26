@@ -169,10 +169,11 @@ function renderLiveRoomMetaOnly(room) {
   meta.appendChild(createMetaItem('Oda Tipi', getRoomTypeLabel(room.room_type)));
   meta.appendChild(createMetaItem('Görünürlük', getVisibilityLabel(room.visibility)));
   meta.appendChild(createMetaItem('FriendZone Katılımcı', `${fzCount}/${room.max_participants || 0}`));
-  meta.appendChild(createMetaItem('Jitsi Bağlantısı', `${jitsiCount} kişi`));
+  meta.appendChild(createMetaItem(getLiveConnectionLabel(room), `${jitsiCount} kişi`));
   meta.appendChild(createMetaItem('Misafir', `${guestCount} kişi`));
   meta.appendChild(createMetaItem('Topluluk', room.community_name || '-'));
   meta.appendChild(createMetaItem('Sağlayıcı', getMeetingProviderLabel(room.meeting_provider)));
+  meta.appendChild(createMetaItem('Deneyim', getLiveExperienceLabel(room)));
 
   updateParticipantCountLabel();
 }
@@ -634,6 +635,26 @@ function createMetaItem(label, value) {
   item.appendChild(strong);
 
   return item;
+}
+
+function getLiveConnectionLabel(room) {
+  const map = {
+    voice: 'Ses Bağlantısı',
+    meet: 'Video Bağlantısı',
+    event: 'Yayın Bağlantısı'
+  };
+
+  return map[room?.room_type] || 'Jitsi Bağlantısı';
+}
+
+function getLiveExperienceLabel(room) {
+  const map = {
+    voice: 'Sesli muhabbet odası',
+    meet: 'Video görüşme odası',
+    event: 'Canlı yayın / online etkinlik'
+  };
+
+  return map[room?.room_type] || 'Canlı sosyal oda';
 }
 
 function getRoomTypeLabel(type) {

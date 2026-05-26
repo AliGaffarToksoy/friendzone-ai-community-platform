@@ -1287,3 +1287,34 @@
 .room-detail-button {
   white-space: nowrap;
 }
+
+/* =========================================================
+   Live Experience Room Type Polish
+   ========================================================= */
+
+.room-type-icon.type-voice,
+.room-detail-icon.type-voice {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.95), rgba(99, 102, 241, 0.86));
+}
+
+.room-type-icon.type-meet,
+.room-detail-icon.type-meet {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.96), rgba(59, 130, 246, 0.86));
+}
+
+.room-type-icon.type-event,
+.room-detail-icon.type-event {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.92), rgba(251, 146, 60, 0.82));
+}
+
+.room-category-card[data-room-type="voice"] {
+  border-color: rgba(20, 184, 166, 0.24);
+}
+
+.room-category-card[data-room-type="meet"] {
+  border-color: rgba(99, 102, 241, 0.26);
+}
+
+.room-category-card[data-room-type="event"] {
+  border-color: rgba(244, 63, 94, 0.24);
+}

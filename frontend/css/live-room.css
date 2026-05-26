@@ -477,3 +477,15 @@ EOF
     min-height: 520px;
   }
 }
+
+/* =========================================================
+   Live Experience Meta Polish
+   ========================================================= */
+
+.live-room-meta div:nth-child(5),
+.live-room-meta div:nth-child(6),
+.live-room-meta div:nth-child(9) {
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.14), transparent 45%),
+    rgba(2, 6, 23, 0.42);
+}
