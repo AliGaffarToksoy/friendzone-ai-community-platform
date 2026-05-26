@@ -1273,3 +1273,17 @@
     padding-right: 18px;
   }
 }
+
+/* =========================================================
+   Social Room Share Link Overflow Fix
+   ========================================================= */
+
+.room-detail-meta-grid strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.room-action-button,
+.room-detail-button {
+  white-space: nowrap;
+}
