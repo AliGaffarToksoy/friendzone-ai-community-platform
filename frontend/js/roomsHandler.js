@@ -821,7 +821,7 @@ function updateRoomTypeHelp() {
     study: 'Ders çalışma odasıdır. Çalışma grubu olarak listelenir; canlı görüşme açmaz.',
     voice: 'Sesli muhabbet odasıdır. Otomatik canlı bağlantı üretir ve kamera kapalı başlar.',
     meet: 'Video görüşme odasıdır. Zoom / Google Meet mantığıyla FriendZone içinde açılır.',
-    event: 'Canlı yayın veya online etkinlik odasıdır. Webinar/seminer gibi kullanılabilir.'
+    event: 'Canlı yayın veya online etkinlik odasıdır. Webinar, seminer, topluluk sunumu veya herkese açık etkinlik gibi kullanılabilir.'
   };
 
   help.textContent = map[roomType] || map.casual;
@@ -996,7 +996,7 @@ function getLiveRoomActionText(room) {
   const map = {
     voice: 'Sesli Odaya Gir',
     meet: 'Video Meet’e Gir',
-    event: 'Canlı Yayına Katıl'
+    event: 'Online Etkinliğe Katıl'
   };
 
   return map[room?.room_type] || 'Canlı Odaya Gir';
@@ -1006,7 +1006,7 @@ function getLiveRoomShareText(room) {
   const map = {
     voice: 'Sesli Oda Linkini Kopyala',
     meet: 'Meet Linkini Kopyala',
-    event: 'Yayın Linkini Kopyala'
+    event: 'Etkinlik Linkini Kopyala'
   };
 
   return map[room?.room_type] || 'Link Kopyala';

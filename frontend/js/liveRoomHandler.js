@@ -181,6 +181,10 @@ function renderLiveRoomMetaOnly(room) {
   meta.appendChild(createMetaItem('Sağlayıcı', getMeetingProviderLabel(room.meeting_provider)));
   meta.appendChild(createMetaItem('Deneyim', getLiveExperienceLabel(room)));
 
+  if (room.room_type === 'event') {
+    meta.appendChild(createMetaItem('Yayın Modu', 'Online etkinlik / webinar'));
+  }
+
   updateParticipantCountLabel();
 }
 
@@ -309,7 +313,9 @@ function buildJitsiConfig(room) {
     ...(isEventRoom ? {
       startAudioOnly: false,
       startWithAudioMuted: true,
-      startWithVideoMuted: false
+      startWithVideoMuted: false,
+      enableLayerSuspension: true,
+      enableNoisyMicDetection: true
     } : {})
   };
 }
@@ -504,7 +510,7 @@ function renderParticipants(participants) {
   const sectionTitle = document.createElement('div');
   sectionTitle.className = 'live-room-section-title';
   sectionTitle.innerHTML = `
-    <strong>FriendZone Katılımcıları</strong>
+    <strong>${getFriendZoneParticipantSectionTitle()}</strong>
     <span>${participants.length} kişi</span>
   `;
 
@@ -532,7 +538,7 @@ function renderParticipants(participants) {
   const guestTitle = document.createElement('div');
   guestTitle.className = 'live-room-section-title';
   guestTitle.innerHTML = `
-    <strong>Jitsi Misafirleri</strong>
+    <strong>${getGuestParticipantSectionTitle()}</strong>
     <span>${guests.length} kişi</span>
   `;
 
@@ -551,6 +557,22 @@ function renderParticipants(participants) {
   }
 
   list.appendChild(guestSection);
+}
+
+function getFriendZoneParticipantSectionTitle() {
+  if (liveRoomCache?.room_type === 'event') {
+    return 'FriendZone Katılımcıları / İzleyiciler';
+  }
+
+  return 'FriendZone Katılımcıları';
+}
+
+function getGuestParticipantSectionTitle() {
+  if (liveRoomCache?.room_type === 'event') {
+    return 'Jitsi Misafir İzleyiciler';
+  }
+
+  return 'Jitsi Misafirleri';
 }
 
 function createFriendZoneParticipantCard(participant) {
@@ -755,7 +777,7 @@ function getLiveExperienceLabel(room) {
   const map = {
     voice: 'Sesli muhabbet odası · kamera kapalı başlar',
     meet: 'Video görüşme odası',
-    event: 'Canlı yayın / online etkinlik'
+    event: 'Canlı yayın / online etkinlik · mikrofon kapalı başlar'
   };
 
   return map[room?.room_type] || 'Canlı sosyal oda';
