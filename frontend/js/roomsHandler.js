@@ -28,6 +28,7 @@ function bindRoomEvents() {
   const eventFilterInput = document.getElementById('eventFilterInput');
 
   const roomTypeSelect = document.getElementById('roomType');
+  const createRoomExperienceOptions = document.querySelectorAll('.room-experience-option');
 
   const closeRoomParticipantsBtn = document.getElementById('closeRoomParticipantsBtn');
   const roomParticipantsModal = document.getElementById('roomParticipantsModal');
@@ -60,6 +61,25 @@ function bindRoomEvents() {
       }
 
       await loadRooms();
+    });
+  });
+
+  createRoomExperienceOptions.forEach((button) => {
+    button.addEventListener('click', () => {
+      const selectedType = button.dataset.createRoomType || 'voice';
+
+      createRoomExperienceOptions.forEach((item) => {
+        item.classList.remove('active');
+      });
+
+      button.classList.add('active');
+
+      if (roomTypeSelect) {
+        roomTypeSelect.value = selectedType;
+      }
+
+      updateSmartRoomFields();
+      updateRoomTypeHelp();
     });
   });
 
@@ -629,7 +649,12 @@ async function createRoom(event) {
     return;
   }
 
-  showToast('Sosyal oda oluşturuldu.', 'success');
+  showToast(
+    isLiveRoomCapable(response.data)
+      ? 'Canlı oda oluşturuldu. Katılım linki hazır.'
+      : 'Sosyal oda oluşturuldu.',
+    'success'
+  );
 
   if (modal) {
     modal.classList.add('hidden');
@@ -858,7 +883,7 @@ function updateSmartRoomFields() {
   }
 
   if (showMeeting && meetingUrl && !meetingUrl.value) {
-    meetingUrl.placeholder = 'Boş bırakılırsa FriendZone otomatik güvenli Jitsi odası oluşturur.';
+    meetingUrl.placeholder = 'Boş bırakılırsa otomatik Jitsi linki üretilir';
   }
 
   if (!showMeeting && provider) {
