@@ -223,13 +223,43 @@
       </div>
 
       <form id="createRoomForm" class="create-room-form">
+        <section class="room-experience-picker">
+          <div>
+            <p class="rooms-eyebrow">Room Experience</p>
+            <h3>Oda deneyimini seç</h3>
+            <span>
+              Sesli muhabbet, video meet veya online etkinlik seçerek FriendZone içinde canlı alan oluştur.
+            </span>
+          </div>
+
+          <div class="room-experience-options">
+            <button class="room-experience-option active" type="button" data-create-room-type="voice">
+              <span>🎙️</span>
+              <strong>Sesli Muhabbet</strong>
+              <small>Kamera kapalı başlayan konuşma odası</small>
+            </button>
+
+            <button class="room-experience-option" type="button" data-create-room-type="meet">
+              <span>🎥</span>
+              <strong>Video Meet</strong>
+              <small>Zoom / Google Meet tarzı görüşme</small>
+            </button>
+
+            <button class="room-experience-option" type="button" data-create-room-type="event">
+              <span>📡</span>
+              <strong>Online Etkinlik</strong>
+              <small>Webinar, sunum veya canlı yayın</small>
+            </button>
+          </div>
+        </section>
+
         <div class="form-grid">
           <div class="form-group">
             <label for="roomName">Oda adı</label>
             <input
               id="roomName"
               type="text"
-              placeholder="Örn: İngilizce Pratik Odası"
+              placeholder="Örn: Cloud Sohbet Odası"
               required
             >
           </div>
@@ -237,16 +267,16 @@
           <div class="form-group">
             <label for="roomType">Oda tipi</label>
             <select id="roomType" required>
+              <option value="voice">Sesli Muhabbet</option>
+              <option value="meet">Video Meet</option>
+              <option value="event">Canlı Yayın / Online Etkinlik</option>
               <option value="casual">Sohbet</option>
               <option value="language">Dil Pratiği</option>
               <option value="gaming">Oyun</option>
               <option value="study">Ders Çalışma</option>
-              <option value="voice">Sesli Muhabbet</option>
-              <option value="meet">Video Meet</option>
-              <option value="event">Canlı Yayın / Online Etkinlik</option>
             </select>
             <small id="roomTypeHelp" class="room-type-help">
-              Sohbet odaları kart olarak oluşturulur. Sesli, Meet ve Canlı Yayın odaları canlı görüşme linki üretir.
+              Sesli, Meet ve Canlı Yayın odaları için canlı bağlantı otomatik üretilebilir.
             </small>
           </div>
         </div>
