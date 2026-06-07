@@ -8,7 +8,6 @@ the application should be served via a WSGI server such as Gunicorn.
 
 from . import create_app, socketio
 
-# Create the Flask application
 
 app = create_app()
 
