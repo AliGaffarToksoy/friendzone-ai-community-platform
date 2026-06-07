@@ -9,8 +9,6 @@ occurs in the application factory (see backend/__init__.py).
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
-# Create SQLAlchemy database instance
 db = SQLAlchemy()
 
-# Create Migrate instance
 migrate = Migrate()
